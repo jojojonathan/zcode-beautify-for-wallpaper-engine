@@ -10,11 +10,18 @@
  *   forwards the command over IPC and exits; the window belongs to the
  *   pre-existing process. The returned handle therefore carries the real
  *   window handle + client rect, and `proc` is diagnostics-only.
- * - Closing must go through `-control closeWallpaper -playInWindow <title>`;
- *   killing the spawn handle would leave the window behind.
+ * - Closing (WE 2.8.42, verified 2026-11): `-control closeWallpaper` — BOTH
+ *   the -playInWindow and -file variants — stops ALL wallpaper playback and
+ *   kills the user's DESKTOP wallpaper(s). A plain WM_CLOSE posted to the
+ *   render window closes just that window instance and leaves desktop
+ *   playback (WPE*Wallpaper windows) alive, so WM_CLOSE is the primary close
+ *   path; -control close remains only as a fallback and re-applies the
+ *   desktop wallpapers from WE's config afterwards.
  */
 
 import { spawn, type ChildProcess } from "node:child_process";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { checkWallpaperEngine } from "./dependencyCheck.js";
 import { execFileP } from "./exec.js";
 
@@ -242,12 +249,33 @@ export async function openSceneWindow(
   return { title: opts.title, hwnd, client, proc };
 }
 
-/** Closes the scene window via the control IPC and waits until it is gone. */
+/**
+ * Closes the scene window and waits until it is gone.
+ *
+ * Primary path: WM_CLOSE posted to the window (like a user clicking X) —
+ * unloads only the window instance. Fallback: `-control closeWallpaper
+ * -playInWindow`, which in WE 2.8.42 stops ALL playback (desktop included),
+ * so the desktop wallpapers are re-applied from WE's config.json right after.
+ */
 export async function closeSceneWindow(handle: SceneWindowHandle, wallpaperExePath?: string): Promise<void> {
   const exe = wallpaperExePath ?? (await checkWallpaperEngine()).path;
   if (!exe) throw new SceneWindowError("Wallpaper Engine not found — cannot close scene window");
 
+  const closeResult = await postWmCloseByTitle(handle.title);
+  if (closeResult === "gone") return; // window already absent — nothing to close
+  if (closeResult === "sent") {
+    const deadline = Date.now() + 10_000;
+    while (Date.now() < deadline) {
+      if ((await findWindowOnce(handle.title)) === null) return;
+      await sleep(300);
+    }
+    // Window survived WM_CLOSE — fall through to the control command.
+  }
+
   await exec(exe, ["-control", "closeWallpaper", "-playInWindow", handle.title], { timeout: 10_000 });
+  // The control close just killed the desktop playback too (see header) —
+  // bring it back from the wallpapers WE still has configured.
+  await restoreDesktopWallpapers(exe);
 
   const deadline = Date.now() + 10_000;
   while (Date.now() < deadline) {
@@ -256,6 +284,48 @@ export async function closeSceneWindow(handle: SceneWindowHandle, wallpaperExePa
     await sleep(300);
   }
   throw new SceneWindowError(`Window "${handle.title}" still present 10s after closeWallpaper`);
+}
+
+/** Posts WM_CLOSE (0x0010) to the visible window with the exact title. */
+async function postWmCloseByTitle(title: string): Promise<"sent" | "gone" | "error"> {
+  const script = `${PS_WINDOW_HELPERS}
+Add-Type -Namespace N -Name Msg -MemberDefinition '[DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l);'
+$h = Find-WindowByTitle '${title.replace(/'/g, "''")}'
+if ($null -ne $h) { [N.Msg]::PostMessage([IntPtr]$h, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null; Write-Output "sent" } else { Write-Output "gone" }`;
+  try {
+    const { stdout } = await exec("powershell", ["-NoProfile", "-Command", script], { timeout: 15_000 });
+    return stdout.trim() === "sent" ? "sent" : "gone";
+  } catch {
+    return "error";
+  }
+}
+
+/**
+ * Re-applies the desktop wallpapers configured in WE's config.json — used
+ * after the `-control closeWallpaper` fallback, which stops ALL playback.
+ * The config keeps the pre-close state (WE does not clear it on runtime
+ * stop), so this restores what the user had. Playlists get pinned to their
+ * current item (the -control API has no playlist restore) — acceptable for
+ * a path that should never trigger while WM_CLOSE works.
+ */
+async function restoreDesktopWallpapers(exe: string): Promise<void> {
+  try {
+    const cfgPath = path.join(path.dirname(exe), "config.json");
+    const cfg = JSON.parse(readFileSync(cfgPath, "utf8")) as Record<string, unknown>;
+    const files: string[] = [];
+    for (const v of Object.values(cfg)) {
+      const sel = (v as { general?: { wallpaperconfig?: { selectedwallpapers?: Record<string, { file?: string }> } } })
+        ?.general?.wallpaperconfig?.selectedwallpapers;
+      if (sel) for (const m of Object.values(sel)) {
+        if (typeof m?.file === "string") files.push(m.file);
+      }
+    }
+    for (const f of files) {
+      await exec(exe, ["-control", "openWallpaper", "-file", f], { timeout: 10_000 }).catch(() => undefined);
+    }
+  } catch {
+    /* best effort — config unreadable or WE missing */
+  }
 }
 
 // --- window helpers (single PowerShell roundtrip per operation) -------------

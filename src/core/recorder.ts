@@ -4,7 +4,7 @@
  * is copied into a GDI bitmap, so the scene records even while the window is
  * fully occluded — no topmost, no Desktop Duplication, nothing on-screen
  * changes while recording. Frames are grabbed in a single PowerShell loop
- * (frame-paced by a Stopwatch) and encoded from the PNG sequence afterwards.
+ * (frame-paced by a Stopwatch) and encoded from the JPEG sequence afterwards.
  *
  * Hard-won constraints encoded here:
  * - flags must include PW_CLIENTONLY: flag 2 alone renders the WHOLE window
@@ -39,14 +39,14 @@ export class RecordError extends Error {}
  * renders into the capture even when fully OCCLUDED — no topmost, no
  * Desktop Duplication, nothing on-screen changes while recording. Frames
  * are grabbed in a single PowerShell loop (frame-paced by a Stopwatch)
- * and encoded from the BMP sequence afterwards.
+ * and encoded from the JPEG sequence afterwards.
  */
 async function recordWindowBackground(
   handle: SceneWindowHandle,
   out: string,
   opts: Required<Pick<RecordOptions, "duration" | "fps" | "outWidth" | "outHeight">>,
   ffmpeg: string,
-): Promise<void> {
+): Promise<{ frames: number; avgFps: number }> {
   const seqDir = path.join(path.dirname(path.resolve(out)), `seq-${process.pid}-${Date.now().toString(36)}`);
   mkdirSync(seqDir, { recursive: true });
   const frameMs = Math.max(20, Math.round(1000 / opts.fps));
@@ -67,6 +67,13 @@ $r = New-Object PW+RECT
 $w = $r.R - $r.L; $h = $r.B - $r.T
 if ($w -le 0 -or $h -le 0) { Write-Output "0"; exit 1 }
 $dir = '${seqDir.replace(/\\/g, "\\\\")}'
+# JPEG (quality 95) instead of PNG: the GDI+ PNG encoder ran ~300ms/frame on
+# 2K/4K client areas, throttling the loop to ~3 real fps (a 15s capture came
+# out as 47 frames = 1.57s of footage and broke the crossfade). JPEG encodes
+# several times faster and the loop is re-encoded from the sequence anyway.
+$enc = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object { $_.MimeType -eq 'image/jpeg' }
+$ep = New-Object System.Drawing.Imaging.EncoderParameters(1)
+$ep.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter([System.Drawing.Imaging.Encoder]::Quality, [long]95)
 $sw = [System.Diagnostics.Stopwatch]::StartNew()
 $n = 0
 while ($sw.ElapsedMilliseconds -lt ${opts.duration * 1000}) {
@@ -78,11 +85,12 @@ while ($sw.ElapsedMilliseconds -lt ${opts.duration * 1000}) {
   $hdc = $g.GetHdc()
   [PW]::PrintWindow($target, $hdc, 3) | Out-Null   # PW_CLIENTONLY|PW_RENDERFULLCONTENT
   $g.ReleaseHdc($hdc); $g.Dispose()
-  $bmp.Save((Join-Path $dir ('f_{0:d6}.png' -f $n)), [System.Drawing.Imaging.ImageFormat]::Png)
+  $bmp.Save((Join-Path $dir ('f_{0:d6}.jpg' -f $n)), $enc, $ep)
   $bmp.Dispose()
   $n++
 }
 $sw.Stop()
+$ep.Dispose()
 Write-Output $n`;
   let frames = 0;
   try {
@@ -99,11 +107,19 @@ Write-Output $n`;
   if (frames < 10) throw new RecordError(`PrintWindow captured too few frames (${frames})`);
   const outW = opts.outWidth ?? 1920;
   const outH = opts.outHeight ?? 1080;
+  // The capture loop is wall-clock bounded, so a slow frame path (big client
+  // area, heavy GPU->CPU readback) yields FEWER frames instead of a longer
+  // capture. Encoding those at the target fps would silently shrink the clip
+  // (47 frames -> 1.57s, a hard makeSeamless failure). Encoding at the
+  // average capture rate keeps the clip ~duration long with the animation
+  // running at its true speed — merely at a lower frame rate.
+  const avgFps = frames / opts.duration;
+  const framerate = avgFps < opts.fps * 0.9 ? `${frames}/${opts.duration}` : String(opts.fps);
   try {
     await exec(ffmpeg, [
       "-y", "-hide_banner", "-loglevel", "warning",
-      "-framerate", String(opts.fps),
-      "-i", path.join(seqDir, "f_%06d.png"),
+      "-framerate", framerate,
+      "-i", path.join(seqDir, "f_%06d.jpg"),
       "-vf", `scale=${outW}:${outH}`,
       "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p", "-an",
       out,
@@ -113,6 +129,7 @@ Write-Output $n`;
   } finally {
     rmSync(seqDir, { recursive: true, force: true });
   }
+  return { frames, avgFps };
 }
 
 export async function recordSceneWindow(
@@ -120,7 +137,7 @@ export async function recordSceneWindow(
   out: string,
   opts: RecordOptions,
   ffmpegPath?: string,
-): Promise<void> {
+): Promise<{ frames: number; avgFps: number }> {
   const ffmpeg = ffmpegPath ?? (await checkFfmpeg()).path;
   if (!ffmpeg) throw new RecordError("ffmpeg not found — cannot record scene window");
   mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
@@ -130,12 +147,13 @@ export async function recordSceneWindow(
   // deliberately NO ddagrab fallback: it requires a topmost window, which
   // defeats the whole design. A PrintWindow failure surfaces as an error and
   // the pipeline's black-gate retry simply reopens the window.
-  await recordWindowBackground(handle, out, {
+  const rec = await recordWindowBackground(handle, out, {
     duration: opts.duration,
     fps: opts.fps,
     outWidth: opts.outWidth ?? 1920,
     outHeight: opts.outHeight ?? 1080,
   }, ffmpeg);
+  return rec;
 }
 
 export interface BlacknessReport {

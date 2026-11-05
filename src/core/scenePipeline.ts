@@ -241,7 +241,10 @@ export async function importScene(
       onProgress("recording", `${opts.duration}s @ ${opts.fps}fps`);
       const rawPath = path.join(path.dirname(loopPath), `raw-${Date.now()}.mp4`);
       fs.mkdirSync(path.dirname(rawPath), { recursive: true });
-      await recordSceneWindow(handle, rawPath, { duration: opts.duration, fps: opts.fps, outWidth: opts.width, outHeight: opts.height }, ffmpegPath);
+      const rec = await recordSceneWindow(handle, rawPath, { duration: opts.duration, fps: opts.fps, outWidth: opts.width, outHeight: opts.height }, ffmpegPath);
+      // A capture rate below the target means the frame path was slow; the
+      // encode already compensated (clip stays ~duration long), just report it.
+      onProgress("recorded", `${rec.frames} frames (avg ${rec.avgFps.toFixed(1)} fps)`);
       return { rawPath };
     } finally {
       onProgress("closing");
@@ -302,9 +305,13 @@ export async function extractPoster(loopFile: string, posterPath: string, ffmpeg
   const ffmpeg = ffmpegPath ?? (await checkFfmpeg()).path;
   if (!ffmpeg) throw new SceneImportError("ffmpeg not found");
   fs.mkdirSync(path.dirname(path.resolve(posterPath)), { recursive: true });
+  // Skip the crossfade's darkest opening moment — but adapt to short loops,
+  // where a fixed 1s seek would run past the end and yield no frame.
+  const dur = await probeDuration(loopFile, ffmpeg);
+  const ss = Number.isFinite(dur) && dur > 0 ? Math.min(1, dur * 0.4) : 0;
   await execFileP(ffmpeg, [
     "-y", "-loglevel", "error",
-    "-ss", "1", // skip the crossfade's darkest opening moment
+    "-ss", ss.toFixed(3),
     "-i", loopFile,
     "-frames:v", "1", "-update", "1",
     "-q:v", "2",

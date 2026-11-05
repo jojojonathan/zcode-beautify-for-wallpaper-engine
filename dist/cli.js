@@ -7620,14 +7620,14 @@ var require_gifutil = __commonJS({
       jimpImage.bitmap.data = bitmapImageToShare.bitmap.data;
       return jimpImage;
     };
-    exports.write = function(path15, frames, spec, encoder) {
+    exports.write = function(path16, frames, spec, encoder) {
       encoder = encoder || defaultCodec;
-      const matches = path15.match(/\.[a-zA-Z]+$/);
+      const matches = path16.match(/\.[a-zA-Z]+$/);
       if (matches !== null && INVALID_SUFFIXES.includes(matches[0].toLowerCase())) {
-        throw new Error(`GIF '${path15}' has an unexpected suffix`);
+        throw new Error(`GIF '${path16}' has an unexpected suffix`);
       }
       return encoder.encodeGif(frames, spec).then((gif2) => {
-        return _writeBinary(path15, gif2.buffer).then(() => {
+        return _writeBinary(path16, gif2.buffer).then(() => {
           return gif2;
         });
       });
@@ -7699,9 +7699,9 @@ var require_gifutil = __commonJS({
         }
       }
     }
-    function _readBinary(path15) {
+    function _readBinary(path16) {
       return new Promise((resolve, reject) => {
-        fs15.readFile(path15, (err, buffer) => {
+        fs15.readFile(path16, (err, buffer) => {
           if (err) {
             return reject(err);
           }
@@ -7709,9 +7709,9 @@ var require_gifutil = __commonJS({
         });
       });
     }
-    function _writeBinary(path15, buffer) {
+    function _writeBinary(path16, buffer) {
       return new Promise((resolve, reject) => {
-        fs15.writeFile(path15, buffer, (err) => {
+        fs15.writeFile(path16, buffer, (err) => {
           if (err) {
             return reject(err);
           }
@@ -9722,9 +9722,9 @@ var require_decoder = __commonJS({
         return a2 < 0 ? 0 : a2 > 255 ? 255 : a2;
       }
       constructor.prototype = {
-        load: function load(path15) {
+        load: function load(path16) {
           var xhr = new XMLHttpRequest();
-          xhr.open("GET", path15, true);
+          xhr.open("GET", path16, true);
           xhr.responseType = "arraybuffer";
           xhr.onload = (function() {
             var data = new Uint8Array(xhr.response || xhr.mozResponseArrayBuffer);
@@ -20627,8 +20627,8 @@ var init_parseUtil = __esm({
     init_errors();
     init_en();
     makeIssue = (params) => {
-      const { data, path: path15, errorMaps, issueData } = params;
-      const fullPath = [...path15, ...issueData.path || []];
+      const { data, path: path16, errorMaps, issueData } = params;
+      const fullPath = [...path16, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -20936,11 +20936,11 @@ var init_types2 = __esm({
     init_parseUtil();
     init_util();
     ParseInputLazyPath = class {
-      constructor(parent, value, path15, key) {
+      constructor(parent, value, path16, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path15;
+        this._path = path16;
         this._key = key;
       }
       get path() {
@@ -24753,8 +24753,8 @@ var init_parseUtil2 = __esm({
     init_errors2();
     init_en2();
     makeIssue2 = (params) => {
-      const { data, path: path15, errorMaps, issueData } = params;
-      const fullPath = [...path15, ...issueData.path || []];
+      const { data, path: path16, errorMaps, issueData } = params;
+      const fullPath = [...path16, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -25062,11 +25062,11 @@ var init_types3 = __esm({
     init_parseUtil2();
     init_util2();
     ParseInputLazyPath2 = class {
-      constructor(parent, value, path15, key) {
+      constructor(parent, value, path16, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path15;
+        this._path = path16;
         this._key = key;
       }
       get path() {
@@ -29664,8 +29664,8 @@ var init_parseUtil3 = __esm({
     init_errors3();
     init_en3();
     makeIssue3 = (params) => {
-      const { data, path: path15, errorMaps, issueData } = params;
-      const fullPath = [...path15, ...issueData.path || []];
+      const { data, path: path16, errorMaps, issueData } = params;
+      const fullPath = [...path16, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -29973,11 +29973,11 @@ var init_types4 = __esm({
     init_parseUtil3();
     init_util3();
     ParseInputLazyPath3 = class {
-      constructor(parent, value, path15, key) {
+      constructor(parent, value, path16, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path15;
+        this._path = path16;
         this._key = key;
       }
       get path() {
@@ -33818,8 +33818,8 @@ var init_parseUtil4 = __esm({
     init_errors4();
     init_en4();
     makeIssue4 = (params) => {
-      const { data, path: path15, errorMaps, issueData } = params;
-      const fullPath = [...path15, ...issueData.path || []];
+      const { data, path: path16, errorMaps, issueData } = params;
+      const fullPath = [...path16, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -34127,11 +34127,11 @@ var init_types5 = __esm({
     init_parseUtil4();
     init_util4();
     ParseInputLazyPath4 = class {
-      constructor(parent, value, path15, key) {
+      constructor(parent, value, path16, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path15;
+        this._path = path16;
         this._key = key;
       }
       get path() {
@@ -38254,11 +38254,11 @@ var require_Mime = __commonJS({
         }
       }
     };
-    Mime.prototype.getType = function(path15) {
-      path15 = String(path15);
-      let last = path15.replace(/^.*[/\\]/, "").toLowerCase();
+    Mime.prototype.getType = function(path16) {
+      path16 = String(path16);
+      let last = path16.replace(/^.*[/\\]/, "").toLowerCase();
       let ext = last.replace(/^.*\./, "").toLowerCase();
-      let hasPath = last.length < path15.length;
+      let hasPath = last.length < path16.length;
       let hasDot = ext.length < last.length - 1;
       return (hasDot || !hasPath) && this._types[ext] || null;
     };
@@ -44796,8 +44796,8 @@ function isTokenizerStreamBoundsError(error) {
   }
   return /strtok3[/\\]lib[/\\]stream[/\\]/.test(error.stack);
 }
-async function fileTypeFromFile(path15, options) {
-  return new FileTypeParser2(options).fromFile(path15, options);
+async function fileTypeFromFile(path16, options) {
+  return new FileTypeParser2(options).fromFile(path16, options);
 }
 async function fileTypeFromStream(stream, options) {
   return new FileTypeParser2(options).fromStream(stream);
@@ -44828,9 +44828,9 @@ var init_file_type = __esm({
           }
         }
       }
-      async fromFile(path15) {
+      async fromFile(path16) {
         this.options.signal?.throwIfAborted();
-        const fileHandle = await fs3.open(path15, fileSystemConstants.O_RDONLY | fileSystemConstants.O_NONBLOCK);
+        const fileHandle = await fs3.open(path16, fileSystemConstants.O_RDONLY | fileSystemConstants.O_NONBLOCK);
         const fileStat = await fileHandle.stat();
         if (!fileStat.isFile()) {
           await fileHandle.close();
@@ -44839,7 +44839,7 @@ var init_file_type = __esm({
         const tokenizer = new FileTokenizer(fileHandle, {
           ...this.getTokenizerOptions(),
           fileInfo: {
-            path: path15,
+            path: path16,
             size: fileStat.size
           }
         });
@@ -45174,9 +45174,9 @@ function createJimp({ plugins: pluginsArg, formats: formatsArg } = {}) {
      * await image.write("test/output.png");
      * ```
      */
-    async write(path15, options) {
-      const mimeType = import_lite.default.getType(path15);
-      await writeFile(path15, await this.getBuffer(mimeType, options));
+    async write(path16, options) {
+      const mimeType = import_lite.default.getType(path16);
+      await writeFile(path16, await this.getBuffer(mimeType, options));
     }
     /**
      * Clone the image into a new Jimp instance.
@@ -45825,8 +45825,8 @@ var init_parseUtil5 = __esm({
     init_errors5();
     init_en5();
     makeIssue5 = (params) => {
-      const { data, path: path15, errorMaps, issueData } = params;
-      const fullPath = [...path15, ...issueData.path || []];
+      const { data, path: path16, errorMaps, issueData } = params;
+      const fullPath = [...path16, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -46134,11 +46134,11 @@ var init_types6 = __esm({
     init_parseUtil5();
     init_util6();
     ParseInputLazyPath5 = class {
-      constructor(parent, value, path15, key) {
+      constructor(parent, value, path16, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path15;
+        this._path = path16;
         this._key = key;
       }
       get path() {
@@ -50583,8 +50583,8 @@ var init_parseUtil6 = __esm({
     init_errors6();
     init_en6();
     makeIssue6 = (params) => {
-      const { data, path: path15, errorMaps, issueData } = params;
-      const fullPath = [...path15, ...issueData.path || []];
+      const { data, path: path16, errorMaps, issueData } = params;
+      const fullPath = [...path16, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -50892,11 +50892,11 @@ var init_types7 = __esm({
     init_parseUtil6();
     init_util7();
     ParseInputLazyPath6 = class {
-      constructor(parent, value, path15, key) {
+      constructor(parent, value, path16, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path15;
+        this._path = path16;
         this._key = key;
       }
       get path() {
@@ -54750,8 +54750,8 @@ var init_parseUtil7 = __esm({
     init_errors7();
     init_en7();
     makeIssue7 = (params) => {
-      const { data, path: path15, errorMaps, issueData } = params;
-      const fullPath = [...path15, ...issueData.path || []];
+      const { data, path: path16, errorMaps, issueData } = params;
+      const fullPath = [...path16, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -55059,11 +55059,11 @@ var init_types8 = __esm({
     init_parseUtil7();
     init_util8();
     ParseInputLazyPath7 = class {
-      constructor(parent, value, path15, key) {
+      constructor(parent, value, path16, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path15;
+        this._path = path16;
         this._key = key;
       }
       get path() {
@@ -59044,8 +59044,8 @@ var init_parseUtil8 = __esm({
     init_errors8();
     init_en8();
     makeIssue8 = (params) => {
-      const { data, path: path15, errorMaps, issueData } = params;
-      const fullPath = [...path15, ...issueData.path || []];
+      const { data, path: path16, errorMaps, issueData } = params;
+      const fullPath = [...path16, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -59353,11 +59353,11 @@ var init_types9 = __esm({
     init_parseUtil8();
     init_util9();
     ParseInputLazyPath8 = class {
-      constructor(parent, value, path15, key) {
+      constructor(parent, value, path16, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path15;
+        this._path = path16;
         this._key = key;
       }
       get path() {
@@ -63206,8 +63206,8 @@ var init_parseUtil9 = __esm({
     init_errors9();
     init_en9();
     makeIssue9 = (params) => {
-      const { data, path: path15, errorMaps, issueData } = params;
-      const fullPath = [...path15, ...issueData.path || []];
+      const { data, path: path16, errorMaps, issueData } = params;
+      const fullPath = [...path16, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -63515,11 +63515,11 @@ var init_types10 = __esm({
     init_parseUtil9();
     init_util10();
     ParseInputLazyPath9 = class {
-      constructor(parent, value, path15, key) {
+      constructor(parent, value, path16, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path15;
+        this._path = path16;
         this._key = key;
       }
       get path() {
@@ -67405,8 +67405,8 @@ var init_parseUtil10 = __esm({
     init_errors10();
     init_en10();
     makeIssue10 = (params) => {
-      const { data, path: path15, errorMaps, issueData } = params;
-      const fullPath = [...path15, ...issueData.path || []];
+      const { data, path: path16, errorMaps, issueData } = params;
+      const fullPath = [...path16, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -67714,11 +67714,11 @@ var init_types11 = __esm({
     init_parseUtil10();
     init_util11();
     ParseInputLazyPath10 = class {
-      constructor(parent, value, path15, key) {
+      constructor(parent, value, path16, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path15;
+        this._path = path16;
         this._key = key;
       }
       get path() {
@@ -71556,8 +71556,8 @@ var init_parseUtil11 = __esm({
     init_errors11();
     init_en11();
     makeIssue11 = (params) => {
-      const { data, path: path15, errorMaps, issueData } = params;
-      const fullPath = [...path15, ...issueData.path || []];
+      const { data, path: path16, errorMaps, issueData } = params;
+      const fullPath = [...path16, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -71865,11 +71865,11 @@ var init_types12 = __esm({
     init_parseUtil11();
     init_util12();
     ParseInputLazyPath11 = class {
-      constructor(parent, value, path15, key) {
+      constructor(parent, value, path16, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path15;
+        this._path = path16;
         this._key = key;
       }
       get path() {
@@ -75942,8 +75942,8 @@ var init_parseUtil12 = __esm({
     init_errors12();
     init_en12();
     makeIssue12 = (params) => {
-      const { data, path: path15, errorMaps, issueData } = params;
-      const fullPath = [...path15, ...issueData.path || []];
+      const { data, path: path16, errorMaps, issueData } = params;
+      const fullPath = [...path16, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -76251,11 +76251,11 @@ var init_types13 = __esm({
     init_parseUtil12();
     init_util13();
     ParseInputLazyPath12 = class {
-      constructor(parent, value, path15, key) {
+      constructor(parent, value, path16, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path15;
+        this._path = path16;
         this._key = key;
       }
       get path() {
@@ -80112,8 +80112,8 @@ var init_parseUtil13 = __esm({
     init_errors13();
     init_en13();
     makeIssue13 = (params) => {
-      const { data, path: path15, errorMaps, issueData } = params;
-      const fullPath = [...path15, ...issueData.path || []];
+      const { data, path: path16, errorMaps, issueData } = params;
+      const fullPath = [...path16, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -80421,11 +80421,11 @@ var init_types14 = __esm({
     init_parseUtil13();
     init_util14();
     ParseInputLazyPath13 = class {
-      constructor(parent, value, path15, key) {
+      constructor(parent, value, path16, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path15;
+        this._path = path16;
         this._key = key;
       }
       get path() {
@@ -84439,8 +84439,8 @@ var init_parseUtil14 = __esm({
     init_errors14();
     init_en14();
     makeIssue14 = (params) => {
-      const { data, path: path15, errorMaps, issueData } = params;
-      const fullPath = [...path15, ...issueData.path || []];
+      const { data, path: path16, errorMaps, issueData } = params;
+      const fullPath = [...path16, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -84748,11 +84748,11 @@ var init_types16 = __esm({
     init_parseUtil14();
     init_util15();
     ParseInputLazyPath14 = class {
-      constructor(parent, value, path15, key) {
+      constructor(parent, value, path16, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path15;
+        this._path = path16;
         this._key = key;
       }
       get path() {
@@ -88716,8 +88716,8 @@ var init_parseUtil15 = __esm({
     init_errors15();
     init_en15();
     makeIssue15 = (params) => {
-      const { data, path: path15, errorMaps, issueData } = params;
-      const fullPath = [...path15, ...issueData.path || []];
+      const { data, path: path16, errorMaps, issueData } = params;
+      const fullPath = [...path16, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -89025,11 +89025,11 @@ var init_types17 = __esm({
     init_parseUtil15();
     init_util16();
     ParseInputLazyPath15 = class {
-      constructor(parent, value, path15, key) {
+      constructor(parent, value, path16, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path15;
+        this._path = path16;
         this._key = key;
       }
       get path() {
@@ -95766,8 +95766,8 @@ var init_parseUtil16 = __esm({
     init_errors16();
     init_en16();
     makeIssue16 = (params) => {
-      const { data, path: path15, errorMaps, issueData } = params;
-      const fullPath = [...path15, ...issueData.path || []];
+      const { data, path: path16, errorMaps, issueData } = params;
+      const fullPath = [...path16, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -96075,11 +96075,11 @@ var init_types18 = __esm({
     init_parseUtil16();
     init_util17();
     ParseInputLazyPath16 = class {
-      constructor(parent, value, path15, key) {
+      constructor(parent, value, path16, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path15;
+        this._path = path16;
         this._key = key;
       }
       get path() {
@@ -111431,7 +111431,7 @@ var VERSION, REPO_URL, FORK_URL, AUTHOR, LICENSE;
 var init_version = __esm({
   "dist/version.js"() {
     "use strict";
-    VERSION = "0.6.1";
+    VERSION = "0.6.3";
     REPO_URL = "https://github.com/Logocceai/zcode-beautify";
     FORK_URL = "https://github.com/Mc-GrowlR/zcode-beautify-for-wallpaper-engine";
     AUTHOR = "Mc-GrowlR";
@@ -112243,6 +112243,8 @@ var init_dependencyCheck = __esm({
 
 // dist/core/weLauncher.js
 import { spawn as spawn2 } from "node:child_process";
+import { readFileSync } from "node:fs";
+import path6 from "node:path";
 async function windowIsBlack(title) {
   const script = `
 Add-Type -AssemblyName System.Drawing
@@ -112316,7 +112318,19 @@ async function closeSceneWindow(handle, wallpaperExePath) {
   const exe = wallpaperExePath ?? (await checkWallpaperEngine()).path;
   if (!exe)
     throw new SceneWindowError("Wallpaper Engine not found \u2014 cannot close scene window");
+  const closeResult = await postWmCloseByTitle(handle.title);
+  if (closeResult === "gone")
+    return;
+  if (closeResult === "sent") {
+    const deadline2 = Date.now() + 1e4;
+    while (Date.now() < deadline2) {
+      if (await findWindowOnce(handle.title) === null)
+        return;
+      await sleep(300);
+    }
+  }
   await exec2(exe, ["-control", "closeWallpaper", "-playInWindow", handle.title], { timeout: 1e4 });
+  await restoreDesktopWallpapers(exe);
   const deadline = Date.now() + 1e4;
   while (Date.now() < deadline) {
     const still = await findWindowOnce(handle.title);
@@ -112325,6 +112339,37 @@ async function closeSceneWindow(handle, wallpaperExePath) {
     await sleep(300);
   }
   throw new SceneWindowError(`Window "${handle.title}" still present 10s after closeWallpaper`);
+}
+async function postWmCloseByTitle(title) {
+  const script = `${PS_WINDOW_HELPERS}
+Add-Type -Namespace N -Name Msg -MemberDefinition '[DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l);'
+$h = Find-WindowByTitle '${title.replace(/'/g, "''")}'
+if ($null -ne $h) { [N.Msg]::PostMessage([IntPtr]$h, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null; Write-Output "sent" } else { Write-Output "gone" }`;
+  try {
+    const { stdout } = await exec2("powershell", ["-NoProfile", "-Command", script], { timeout: 15e3 });
+    return stdout.trim() === "sent" ? "sent" : "gone";
+  } catch {
+    return "error";
+  }
+}
+async function restoreDesktopWallpapers(exe) {
+  try {
+    const cfgPath = path6.join(path6.dirname(exe), "config.json");
+    const cfg = JSON.parse(readFileSync(cfgPath, "utf8"));
+    const files = [];
+    for (const v of Object.values(cfg)) {
+      const sel = v?.general?.wallpaperconfig?.selectedwallpapers;
+      if (sel)
+        for (const m of Object.values(sel)) {
+          if (typeof m?.file === "string")
+            files.push(m.file);
+        }
+    }
+    for (const f2 of files) {
+      await exec2(exe, ["-control", "openWallpaper", "-file", f2], { timeout: 1e4 }).catch(() => void 0);
+    }
+  } catch {
+  }
 }
 async function waitForWindow(title, timeoutMs) {
   const script = `${PS_WINDOW_HELPERS}
@@ -112439,9 +112484,9 @@ function Measure-Client([IntPtr]$h) {
 
 // dist/core/recorder.js
 import { mkdirSync, rmSync } from "node:fs";
-import path6 from "node:path";
+import path7 from "node:path";
 async function recordWindowBackground(handle, out, opts, ffmpeg) {
-  const seqDir = path6.join(path6.dirname(path6.resolve(out)), `seq-${process.pid}-${Date.now().toString(36)}`);
+  const seqDir = path7.join(path7.dirname(path7.resolve(out)), `seq-${process.pid}-${Date.now().toString(36)}`);
   mkdirSync(seqDir, { recursive: true });
   const frameMs = Math.max(20, Math.round(1e3 / opts.fps));
   const script = `
@@ -112461,6 +112506,13 @@ $r = New-Object PW+RECT
 $w = $r.R - $r.L; $h = $r.B - $r.T
 if ($w -le 0 -or $h -le 0) { Write-Output "0"; exit 1 }
 $dir = '${seqDir.replace(/\\/g, "\\\\")}'
+# JPEG (quality 95) instead of PNG: the GDI+ PNG encoder ran ~300ms/frame on
+# 2K/4K client areas, throttling the loop to ~3 real fps (a 15s capture came
+# out as 47 frames = 1.57s of footage and broke the crossfade). JPEG encodes
+# several times faster and the loop is re-encoded from the sequence anyway.
+$enc = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object { $_.MimeType -eq 'image/jpeg' }
+$ep = New-Object System.Drawing.Imaging.EncoderParameters(1)
+$ep.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter([System.Drawing.Imaging.Encoder]::Quality, [long]95)
 $sw = [System.Diagnostics.Stopwatch]::StartNew()
 $n = 0
 while ($sw.ElapsedMilliseconds -lt ${opts.duration * 1e3}) {
@@ -112472,11 +112524,12 @@ while ($sw.ElapsedMilliseconds -lt ${opts.duration * 1e3}) {
   $hdc = $g.GetHdc()
   [PW]::PrintWindow($target, $hdc, 3) | Out-Null   # PW_CLIENTONLY|PW_RENDERFULLCONTENT
   $g.ReleaseHdc($hdc); $g.Dispose()
-  $bmp.Save((Join-Path $dir ('f_{0:d6}.png' -f $n)), [System.Drawing.Imaging.ImageFormat]::Png)
+  $bmp.Save((Join-Path $dir ('f_{0:d6}.jpg' -f $n)), $enc, $ep)
   $bmp.Dispose()
   $n++
 }
 $sw.Stop()
+$ep.Dispose()
 Write-Output $n`;
   let frames = 0;
   try {
@@ -112493,6 +112546,8 @@ Write-Output $n`;
     throw new RecordError(`PrintWindow captured too few frames (${frames})`);
   const outW = opts.outWidth ?? 1920;
   const outH = opts.outHeight ?? 1080;
+  const avgFps = frames / opts.duration;
+  const framerate = avgFps < opts.fps * 0.9 ? `${frames}/${opts.duration}` : String(opts.fps);
   try {
     await exec3(ffmpeg, [
       "-y",
@@ -112500,9 +112555,9 @@ Write-Output $n`;
       "-loglevel",
       "warning",
       "-framerate",
-      String(opts.fps),
+      framerate,
       "-i",
-      path6.join(seqDir, "f_%06d.png"),
+      path7.join(seqDir, "f_%06d.jpg"),
       "-vf",
       `scale=${outW}:${outH}`,
       "-c:v",
@@ -112519,18 +112574,20 @@ Write-Output $n`;
   } finally {
     rmSync(seqDir, { recursive: true, force: true });
   }
+  return { frames, avgFps };
 }
 async function recordSceneWindow(handle, out, opts, ffmpegPath2) {
   const ffmpeg = ffmpegPath2 ?? (await checkFfmpeg()).path;
   if (!ffmpeg)
     throw new RecordError("ffmpeg not found \u2014 cannot record scene window");
-  mkdirSync(path6.dirname(path6.resolve(out)), { recursive: true });
-  await recordWindowBackground(handle, out, {
+  mkdirSync(path7.dirname(path7.resolve(out)), { recursive: true });
+  const rec = await recordWindowBackground(handle, out, {
     duration: opts.duration,
     fps: opts.fps,
     outWidth: opts.outWidth ?? 1920,
     outHeight: opts.outHeight ?? 1080
   }, ffmpeg);
+  return rec;
 }
 async function analyzeBlackness(file, ffmpegPath2) {
   const ffmpeg = ffmpegPath2 ?? (await checkFfmpeg()).path;
@@ -112594,45 +112651,54 @@ var init_recorder = __esm({
 
 // dist/core/loopProcessor.js
 import { mkdirSync as mkdirSync2, rmSync as rmSync2, writeFileSync } from "node:fs";
-import path7 from "node:path";
+import path8 from "node:path";
 async function makeSeamless(input, output, fadeSec, ffmpegPath2, options = {}) {
   const ffmpeg = ffmpegPath2 ?? (await checkFfmpeg()).path;
   if (!ffmpeg)
     throw new LoopError("ffmpeg not found \u2014 cannot process loop");
   const info = await probeVideoInfo(input, ffmpeg);
   const fullDuration = info?.duration ?? await probeDuration(input, ffmpeg);
-  if (!Number.isFinite(fullDuration) || fullDuration <= fadeSec + 1) {
-    throw new LoopError(`Input too short for a ${fadeSec}s crossfade (duration ${fullDuration}s)`);
+  if (!Number.isFinite(fullDuration) || fullDuration <= 0.2) {
+    throw new LoopError(`Input too short to loop (duration ${fullDuration}s)`);
+  }
+  let fade = fadeSec;
+  if (fullDuration <= fade * 2 + 0.1) {
+    fade = Math.max(0.2, fullDuration / 4);
   }
   const duration = Math.min(fullDuration, options.seconds ?? fullDuration);
   const startAt = Math.min(options.startAt ?? 0, fullDuration - duration);
-  if (duration <= fadeSec + 1) {
-    throw new LoopError(`Truncated input too short for a ${fadeSec}s crossfade (duration ${duration}s)`);
+  if (duration <= fade * 2 + 0.1) {
+    if (fullDuration <= fade * 2 + 0.1) {
+      await makeSeamlessPlain(input, output, ffmpeg, { maxWidth: options.maxWidth });
+      const plainDuration = await probeDuration(output, ffmpeg);
+      return { inputDuration: fullDuration, outputDuration: plainDuration };
+    }
+    throw new LoopError(`Truncated input too short for a ${fade}s crossfade (duration ${duration}s)`);
   }
-  mkdirSync2(path7.dirname(path7.resolve(output)), { recursive: true });
-  const mainSeconds = Math.max(0, duration - 2 * fadeSec);
+  mkdirSync2(path8.dirname(path8.resolve(output)), { recursive: true });
+  const mainSeconds = Math.max(0, duration - 2 * fade);
   const queueBytes = info ? info.fps * mainSeconds * info.width * info.height * 1.5 : Infinity;
   if (queueBytes > SINGLE_PASS_BUDGET) {
     await makeSeamlessTwoPass(input, output, ffmpeg, {
       duration,
       startAt,
-      fadeSec,
+      fadeSec: fade,
       maxWidth: options.maxWidth
     });
     const twoPassDuration = await probeDuration(output, ffmpeg);
     return { inputDuration: duration, outputDuration: twoPassDuration };
   }
-  const tailStart = duration - fadeSec;
-  const mainEnd = duration - fadeSec;
+  const tailStart = duration - fade;
+  const mainEnd = duration - fade;
   const scale = options.maxWidth && options.maxWidth > 0 ? `scale=w='min(${options.maxWidth}\\,iw)':h=-2,` : "";
   const filter = [
     `[0:v]split[base][src]`,
     // crossfade base: the source tail, head image fades in over it
     `[src]trim=start=${tailStart.toFixed(4)},setpts=PTS-STARTPTS[tail]`,
-    `[base]trim=end=${fadeSec.toFixed(4)},setpts=PTS-STARTPTS,format=yuva420p,fade=t=in:d=${fadeSec.toFixed(4)}:alpha=1[head]`,
+    `[base]trim=end=${fade.toFixed(4)},setpts=PTS-STARTPTS,format=yuva420p,fade=t=in:d=${fade.toFixed(4)}:alpha=1[head]`,
     `[tail][head]overlay=format=auto[xfade]`,
     // main body: the source between the crossfade end and the tail start
-    `[base]trim=start=${fadeSec.toFixed(4)}:end=${mainEnd.toFixed(4)},setpts=PTS-STARTPTS[main]`,
+    `[base]trim=start=${fade.toFixed(4)}:end=${mainEnd.toFixed(4)},setpts=PTS-STARTPTS[main]`,
     `[xfade][main]concat=n=2:v=1:a=0[joined]`,
     `[joined]${scale}format=yuv420p[out]`
   ].join(";");
@@ -112749,6 +112815,31 @@ async function makeSeamlessTwoPass(input, output, ffmpeg, spec) {
     }
   }
 }
+async function makeSeamlessPlain(input, output, ffmpeg, spec) {
+  const scale = spec.maxWidth && spec.maxWidth > 0 ? `scale=w='min(${spec.maxWidth}\\,iw)':h=-2,` : "";
+  await exec4(ffmpeg, [
+    "-y",
+    "-hide_banner",
+    "-loglevel",
+    "warning",
+    "-i",
+    input,
+    "-vf",
+    `${scale}format=yuv420p`,
+    "-c:v",
+    "libx264",
+    "-crf",
+    "18",
+    "-preset",
+    "veryfast",
+    "-pix_fmt",
+    "yuv420p",
+    "-movflags",
+    "+faststart",
+    "-an",
+    output
+  ], { timeout: 6e5, maxBuffer: 16 * 1024 * 1024 });
+}
 async function probeVideoInfo(file, ffmpegPath2) {
   const ffprobe = ffmpegPath2.replace(/ffmpeg(\.exe)?$/i, "ffprobe$1");
   try {
@@ -112804,12 +112895,12 @@ var init_loopProcessor = __esm({
 // dist/core/cacheManager.js
 import crypto from "node:crypto";
 import fs8 from "node:fs";
-import path8 from "node:path";
+import path9 from "node:path";
 function scenesCacheRoot() {
-  return path8.join(dataDir(), "scenes");
+  return path9.join(dataDir(), "scenes");
 }
 function getCachePath(hash) {
-  return path8.join(scenesCacheRoot(), hash, "loop.mp4");
+  return path9.join(scenesCacheRoot(), hash, "loop.mp4");
 }
 function hasCache(hash) {
   try {
@@ -112841,7 +112932,7 @@ function enforceLimit(maxBytes) {
     return 0;
   }
   const sized = entries.filter((e2) => e2.isDirectory()).map((e2) => {
-    const dir = path8.join(root, e2.name);
+    const dir = path9.join(root, e2.name);
     try {
       return { dir, size: dirSize(dir), lru: lastUseMs(dir) };
     } catch {
@@ -112893,7 +112984,7 @@ function fingerprint(p2) {
         return;
       }
       for (const item of items) {
-        const childAbs = path8.join(abs, item.name);
+        const childAbs = path9.join(abs, item.name);
         const childRel = rel ? `${rel}/${item.name}` : item.name;
         if (item.isDirectory()) {
           walk(childAbs, childRel);
@@ -112937,7 +113028,7 @@ function dirSize(dir) {
       return;
     }
     for (const item of items) {
-      const child = path8.join(dir2, item.name);
+      const child = path9.join(dir2, item.name);
       if (item.isDirectory())
         walkSize(child);
       else if (item.isFile()) {
@@ -112963,12 +113054,12 @@ function lastUseMs(dir) {
   }
   for (const item of items) {
     try {
-      const st = fs8.statSync(path8.join(dir, item.name));
+      const st = fs8.statSync(path9.join(dir, item.name));
       consider(st);
       if (item.isDirectory()) {
-        for (const inner of fs8.readdirSync(path8.join(dir, item.name), { withFileTypes: true })) {
+        for (const inner of fs8.readdirSync(path9.join(dir, item.name), { withFileTypes: true })) {
           try {
-            consider(fs8.statSync(path8.join(dir, item.name, inner.name)));
+            consider(fs8.statSync(path9.join(dir, item.name, inner.name)));
           } catch {
           }
         }
@@ -112996,10 +113087,10 @@ __export(scenePipeline_exports, {
   resolveSceneInput: () => resolveSceneInput
 });
 import fs9 from "node:fs";
-import path9 from "node:path";
+import path10 from "node:path";
 function findVideoInDir(dir) {
   for (const subdir of ["", "files"]) {
-    const base = path9.join(dir, subdir);
+    const base = path10.join(dir, subdir);
     let entries;
     try {
       entries = fs9.readdirSync(base);
@@ -113008,7 +113099,7 @@ function findVideoInDir(dir) {
     }
     const hit = entries.find((e2) => /\.(mp4|webm)$/i.test(e2));
     if (hit)
-      return path9.join(base, hit);
+      return path10.join(base, hit);
   }
   return void 0;
 }
@@ -113023,11 +113114,11 @@ function resolveSceneInput(input) {
     return input;
   if (input.toLowerCase().endsWith(".pkg"))
     return input;
-  let dir = path9.dirname(path9.resolve(input));
+  let dir = path10.dirname(path10.resolve(input));
   for (let hop = 0; hop < 4; hop++) {
-    if (fs9.existsSync(path9.join(dir, "project.json")))
+    if (fs9.existsSync(path10.join(dir, "project.json")))
       return dir;
-    const parent = path9.dirname(dir);
+    const parent = path10.dirname(dir);
     if (parent === dir)
       break;
     dir = parent;
@@ -113072,7 +113163,7 @@ async function importScene(pkgPath, onProgress = () => void 0, options = {}, ffm
     fadeSec: opts.fadeSec
   });
   const loopPath = getCachePath(hash);
-  const posterPath = path9.join(path9.dirname(loopPath), "poster.jpg");
+  const posterPath = path10.join(path10.dirname(loopPath), "poster.jpg");
   if (hasCache(hash)) {
     onProgress("cache-hit", hash);
     touchCache(hash);
@@ -113095,7 +113186,7 @@ async function importScene(pkgPath, onProgress = () => void 0, options = {}, ffm
     onProgress("poster");
     await extractPoster(tmpLoop, posterPath, ffmpegPath2);
     onProgress("saving", hash);
-    fs9.mkdirSync(path9.dirname(loopPath), { recursive: true });
+    fs9.mkdirSync(path10.dirname(loopPath), { recursive: true });
     fs9.renameSync(tmpLoop, loopPath);
     const blackness = await analyzeBlackness(loopPath, ffmpegPath2);
     enforceLimit(opts.maxCacheBytes);
@@ -113107,13 +113198,13 @@ async function importScene(pkgPath, onProgress = () => void 0, options = {}, ffm
     if (fs9.statSync(pkgPath).isDirectory()) {
       let declared;
       try {
-        declared = JSON.parse(fs9.readFileSync(path9.join(pkgPath, "project.json"), "utf8")).file;
+        declared = JSON.parse(fs9.readFileSync(path10.join(pkgPath, "project.json"), "utf8")).file;
       } catch {
       }
-      const name = declared && /\.pkg$/i.test(declared) && fs9.existsSync(path9.join(pkgPath, declared)) ? declared : fs9.readdirSync(pkgPath).find((e2) => /\.pkg$/i.test(e2));
+      const name = declared && /\.pkg$/i.test(declared) && fs9.existsSync(path10.join(pkgPath, declared)) ? declared : fs9.readdirSync(pkgPath).find((e2) => /\.pkg$/i.test(e2));
       if (!name)
         throw new SceneImportError(`No scene.pkg inside: ${pkgPath}`);
-      pkgFile = path9.join(pkgPath, name);
+      pkgFile = path10.join(pkgPath, name);
     }
   } catch (err) {
     if (err instanceof SceneImportError)
@@ -113130,9 +113221,10 @@ async function importScene(pkgPath, onProgress = () => void 0, options = {}, ffm
         throw new SceneWindowBlackError("\u7A97\u53E3\u6E32\u67D3\u672A\u9644\u7740(\u9884\u68C0\u5E27\u5168\u9ED1)");
       }
       onProgress("recording", `${opts.duration}s @ ${opts.fps}fps`);
-      const rawPath2 = path9.join(path9.dirname(loopPath), `raw-${Date.now()}.mp4`);
-      fs9.mkdirSync(path9.dirname(rawPath2), { recursive: true });
-      await recordSceneWindow(handle, rawPath2, { duration: opts.duration, fps: opts.fps, outWidth: opts.width, outHeight: opts.height }, ffmpegPath2);
+      const rawPath2 = path10.join(path10.dirname(loopPath), `raw-${Date.now()}.mp4`);
+      fs9.mkdirSync(path10.dirname(rawPath2), { recursive: true });
+      const rec = await recordSceneWindow(handle, rawPath2, { duration: opts.duration, fps: opts.fps, outWidth: opts.width, outHeight: opts.height }, ffmpegPath2);
+      onProgress("recorded", `${rec.frames} frames (avg ${rec.avgFps.toFixed(1)} fps)`);
       return { rawPath: rawPath2 };
     } finally {
       onProgress("closing");
@@ -113173,7 +113265,7 @@ async function importScene(pkgPath, onProgress = () => void 0, options = {}, ffm
     onProgress("poster");
     await extractPoster(tmpLoop, posterPath, ffmpegPath2);
     onProgress("saving", hash);
-    fs9.mkdirSync(path9.dirname(loopPath), { recursive: true });
+    fs9.mkdirSync(path10.dirname(loopPath), { recursive: true });
     fs9.renameSync(tmpLoop, loopPath);
     fs9.rmSync(rawPath, { force: true });
     enforceLimit(opts.maxCacheBytes);
@@ -113190,14 +113282,15 @@ async function extractPoster(loopFile, posterPath, ffmpegPath2) {
   const ffmpeg = ffmpegPath2 ?? (await checkFfmpeg()).path;
   if (!ffmpeg)
     throw new SceneImportError("ffmpeg not found");
-  fs9.mkdirSync(path9.dirname(path9.resolve(posterPath)), { recursive: true });
+  fs9.mkdirSync(path10.dirname(path10.resolve(posterPath)), { recursive: true });
+  const dur = await probeDuration(loopFile, ffmpeg);
+  const ss = Number.isFinite(dur) && dur > 0 ? Math.min(1, dur * 0.4) : 0;
   await execFileP(ffmpeg, [
     "-y",
     "-loglevel",
     "error",
     "-ss",
-    "1",
-    // skip the crossfade's darkest opening moment
+    ss.toFixed(3),
     "-i",
     loopFile,
     "-frames:v",
@@ -113256,13 +113349,13 @@ __export(session_exports, {
   resetAppearance: () => resetAppearance
 });
 import fs10 from "node:fs";
-import path10 from "node:path";
+import path11 from "node:path";
 async function reapplyStored() {
   const config = mergedConfig();
   return applyToZCode(config, await buildPayloadFromConfig(config));
 }
 async function applyWallpaper(imagePath, opts) {
-  const abs = path10.resolve(imagePath);
+  const abs = path11.resolve(imagePath);
   if (!fs10.existsSync(abs))
     throw new Error(`Image not found: ${abs}`);
   const kind = detectWallpaperType(abs);
@@ -113273,7 +113366,7 @@ async function applyWallpaper(imagePath, opts) {
   const stored = loadConfig();
   const config = { ...baseConfig(opts, stored), mediaType: "image", sceneHash: void 0 };
   fs10.mkdirSync(dataDir(), { recursive: true });
-  const dest = path10.join(dataDir(), "wallpaper" + path10.extname(abs).toLowerCase());
+  const dest = path11.join(dataDir(), "wallpaper" + path11.extname(abs).toLowerCase());
   if (dest !== abs)
     fs10.copyFileSync(abs, dest);
   const assets = await loadWallpaper(dest);
@@ -113284,7 +113377,7 @@ async function applyWallpaper(imagePath, opts) {
 }
 function serveMediaToken() {
   try {
-    return fs10.readFileSync(path10.join(dataDir(), "serve.token"), "utf8").trim();
+    return fs10.readFileSync(path11.join(dataDir(), "serve.token"), "utf8").trim();
   } catch {
     return "";
   }
@@ -113318,7 +113411,7 @@ function baseConfig(opts, stored) {
   };
 }
 async function applySceneWallpaper(scenePath, opts = {}) {
-  const abs = path10.resolve(scenePath);
+  const abs = path11.resolve(scenePath);
   const { importScene: importScene2 } = await Promise.resolve().then(() => (init_scenePipeline(), scenePipeline_exports));
   const scene = await importScene2(abs, opts.onProgress ?? (() => void 0));
   const stored = loadConfig();
@@ -113363,7 +113456,7 @@ async function resetAppearance(port) {
 async function buildPayloadFromConfig(config) {
   let assets;
   if (config.mediaType === "video" && config.wallpaperPath && fs10.existsSync(config.wallpaperPath)) {
-    const posterPath = path10.join(path10.dirname(config.wallpaperPath), "poster.jpg");
+    const posterPath = path11.join(path11.dirname(config.wallpaperPath), "poster.jpg");
     if (fs10.existsSync(posterPath)) {
       assets = await loadWallpaper(posterPath);
     }
@@ -113590,8 +113683,8 @@ __export(experimental_exports, {
   spawnServeDetached: () => spawnServeDetached
 });
 import { spawn as spawn3 } from "node:child_process";
-import { existsSync as existsSync2, readFileSync } from "node:fs";
-import path11 from "node:path";
+import { existsSync as existsSync2, readFileSync as readFileSync2 } from "node:fs";
+import path12 from "node:path";
 function spawnServeDetached(apiPort, cliJs) {
   fetch(`http://127.0.0.1:${apiPort}/api/health`, { signal: AbortSignal.timeout(1500) }).then((r2) => {
     if (!r2.ok)
@@ -113633,9 +113726,9 @@ async function teardownLive() {
   const cfg = loadConfig();
   const port = cfg.port ?? target().cdpPort;
   try {
-    const tokenFile = path11.join(dataDir(), "serve.token");
+    const tokenFile = path12.join(dataDir(), "serve.token");
     if (existsSync2(tokenFile)) {
-      const token = readFileSync(tokenFile, "utf8").trim();
+      const token = readFileSync2(tokenFile, "utf8").trim();
       const apiPort = cfg.apiPort ?? target().apiPort;
       const res = await fetch(`http://127.0.0.1:${apiPort}/api/experimental/disable`, {
         method: "POST",
@@ -117506,7 +117599,7 @@ var init_media = __esm({
 
 // dist/core/weLibrary.js
 import fs12 from "node:fs";
-import path12 from "node:path";
+import path13 from "node:path";
 function isDirWithEntries(p2) {
   try {
     return fs12.statSync(p2).isDirectory() && fs12.readdirSync(p2).length > 0;
@@ -117526,8 +117619,8 @@ function findWeRoots() {
   const seen = /* @__PURE__ */ new Set();
   for (const lib of steamLibraryCandidates()) {
     const candidates = [
-      ["workshop", path12.join(lib, "steamapps", "workshop", "content", "431960")],
-      ["myprojects", path12.join(lib, "steamapps", "common", "wallpaper_engine", "projects", "myprojects")]
+      ["workshop", path13.join(lib, "steamapps", "workshop", "content", "431960")],
+      ["myprojects", path13.join(lib, "steamapps", "common", "wallpaper_engine", "projects", "myprojects")]
     ];
     for (const [kind, dir] of candidates) {
       const key = dir.toLowerCase();
@@ -117544,17 +117637,17 @@ function weInstallDirs() {
   for (const root of findWeRoots()) {
     if (root.kind !== "workshop")
       continue;
-    dirs.add(path12.resolve(root.dir, "..", "..", "..", "common", "wallpaper_engine"));
+    dirs.add(path13.resolve(root.dir, "..", "..", "..", "common", "wallpaper_engine"));
   }
   for (const lib of steamLibraryCandidates()) {
-    dirs.add(path12.join(lib, "steamapps", "common", "wallpaper_engine"));
+    dirs.add(path13.join(lib, "steamapps", "common", "wallpaper_engine"));
   }
-  return [...dirs].filter((d) => fs12.existsSync(path12.join(d, "config.json")));
+  return [...dirs].filter((d) => fs12.existsSync(path13.join(d, "config.json")));
 }
 function listWeFolders() {
   const out = [];
   for (const install of weInstallDirs()) {
-    const config = readJsonSafe(path12.join(install, "config.json"));
+    const config = readJsonSafe(path13.join(install, "config.json"));
     const userNodes = Object.values(config ?? {}).filter((v) => Boolean(v) && typeof v === "object" && !Array.isArray(v) && "general" in v);
     for (const node of userNodes) {
       const general = node.general;
@@ -117599,7 +117692,7 @@ function listWeWallpapers() {
       continue;
     }
     for (const name of entries) {
-      const dir = path12.join(root.dir, name);
+      const dir = path13.join(root.dir, name);
       let stat;
       try {
         stat = fs12.statSync(dir);
@@ -117611,11 +117704,11 @@ function listWeWallpapers() {
       const type = detectWallpaperType(dir);
       if (type !== "scene" && type !== "video" && type !== "web")
         continue;
-      const project = readJsonSafe(path12.join(dir, "project.json"));
+      const project = readJsonSafe(path13.join(dir, "project.json"));
       const title = typeof project?.title === "string" && project.title.trim() ? project.title.trim() : name;
       const declared = typeof project?.preview === "string" ? project.preview : void 0;
-      const previewName = declared && PREVIEW_NAME_RE.test(declared) ? declared : PREVIEW_FALLBACKS.find((f2) => fs12.existsSync(path12.join(dir, f2)));
-      const usable = previewName ? fs12.existsSync(path12.join(dir, previewName)) : false;
+      const previewName = declared && PREVIEW_NAME_RE.test(declared) ? declared : PREVIEW_FALLBACKS.find((f2) => fs12.existsSync(path13.join(dir, f2)));
+      const usable = previewName ? fs12.existsSync(path13.join(dir, previewName)) : false;
       let folder = folderByKey.get(name);
       if (!folder) {
         const dirLower = dir.toLowerCase();
@@ -117630,9 +117723,9 @@ function listWeWallpapers() {
       if (type === "video") {
         for (const sub of ["", "files"]) {
           try {
-            const hit = fs12.readdirSync(path12.join(dir, sub)).find((e2) => /.(mp4|webm)$/i.test(e2));
+            const hit = fs12.readdirSync(path13.join(dir, sub)).find((e2) => /.(mp4|webm)$/i.test(e2));
             if (hit) {
-              videoFile = path12.join(dir, sub, hit);
+              videoFile = path13.join(dir, sub, hit);
               break;
             }
           } catch {
@@ -117659,17 +117752,17 @@ function listWeWallpapers() {
 function weDirForPath(p2) {
   let abs;
   try {
-    abs = path12.resolve(p2).toLowerCase();
+    abs = path13.resolve(p2).toLowerCase();
   } catch {
     return void 0;
   }
   for (const root of findWeRoots()) {
-    const rootLower = root.dir.toLowerCase() + path12.sep;
+    const rootLower = root.dir.toLowerCase() + path13.sep;
     if (!abs.startsWith(rootLower))
       continue;
-    const id = abs.slice(rootLower.length).split(path12.sep)[0];
+    const id = abs.slice(rootLower.length).split(path13.sep)[0];
     if (id)
-      return path12.join(root.dir, id);
+      return path13.join(root.dir, id);
   }
   return void 0;
 }
@@ -117677,7 +117770,7 @@ function weTitleForPath(p2) {
   const dir = weDirForPath(p2);
   if (!dir)
     return void 0;
-  const project = readJsonSafe(path12.join(dir, "project.json"));
+  const project = readJsonSafe(path13.join(dir, "project.json"));
   return typeof project?.title === "string" && project.title.trim() ? project.title.trim() : void 0;
 }
 function resolveWePreview(source, id, file, nameRe = PREVIEW_NAME_RE) {
@@ -117691,12 +117784,12 @@ function resolveWePreview(source, id, file, nameRe = PREVIEW_NAME_RE) {
   const root = findWeRoots().find((r2) => r2.kind === kind);
   if (!root)
     return void 0;
-  const dir = path12.resolve(root.dir, id);
-  const rootResolved = path12.resolve(root.dir);
-  if (!dir.toLowerCase().startsWith(rootResolved.toLowerCase() + path12.sep))
+  const dir = path13.resolve(root.dir, id);
+  const rootResolved = path13.resolve(root.dir);
+  if (!dir.toLowerCase().startsWith(rootResolved.toLowerCase() + path13.sep))
     return void 0;
-  const fileAbs = path12.resolve(dir, file);
-  if (path12.dirname(fileAbs).toLowerCase() !== dir.toLowerCase())
+  const fileAbs = path13.resolve(dir, file);
+  if (path13.dirname(fileAbs).toLowerCase() !== dir.toLowerCase())
     return void 0;
   return fs12.existsSync(fileAbs) ? fileAbs : void 0;
 }
@@ -117719,7 +117812,7 @@ __export(server_exports, {
 });
 import http from "node:http";
 import fs13 from "node:fs";
-import path13 from "node:path";
+import path14 from "node:path";
 import crypto2 from "node:crypto";
 import { execFile as execFile4, spawn as spawn4 } from "node:child_process";
 import { promisify as promisify4 } from "node:util";
@@ -117738,12 +117831,12 @@ async function ffmpegPath() {
   return ffmpegPathCache || void 0;
 }
 function thumbDir() {
-  return path13.join(dataDir(), "thumbs");
+  return path14.join(dataDir(), "thumbs");
 }
 async function themeThumbFor(source) {
   if (!isInsideDataDir(source))
     return source;
-  const thumb = path13.join(thumbDir(), path13.basename(source) + ".jpg");
+  const thumb = path14.join(thumbDir(), path14.basename(source) + ".jpg");
   try {
     if (!fs13.existsSync(thumb)) {
       const exe = await ffmpegPath();
@@ -117770,7 +117863,7 @@ async function getAssets(config) {
   const wallpaperPath = config.wallpaperPath;
   if (!wallpaperPath || !fs13.existsSync(wallpaperPath))
     return void 0;
-  const sourcePath = config.mediaType === "video" ? path13.join(path13.dirname(wallpaperPath), "poster.jpg") : await themeThumbFor(wallpaperPath);
+  const sourcePath = config.mediaType === "video" ? path14.join(path14.dirname(wallpaperPath), "poster.jpg") : await themeThumbFor(wallpaperPath);
   if (!fs13.existsSync(sourcePath))
     return void 0;
   const mtimeMs = fs13.statSync(sourcePath).mtimeMs;
@@ -117792,13 +117885,13 @@ function currentConfig() {
   return { ...DEFAULT_CONFIG, ...loadConfig() };
 }
 function backupFile() {
-  return path13.join(dataDir(), "config.backup.json");
+  return path14.join(dataDir(), "config.backup.json");
 }
 function hasBackup() {
   return fs13.existsSync(backupFile());
 }
 function weImportsFile() {
-  return path13.join(dataDir(), "we-imports.json");
+  return path14.join(dataDir(), "we-imports.json");
 }
 function loadWeImports() {
   try {
@@ -117818,7 +117911,7 @@ function cachedSceneNames() {
   try {
     for (const d of fs13.readdirSync(scenesCacheRoot())) {
       try {
-        const name = JSON.parse(fs13.readFileSync(path13.join(scenesCacheRoot(), d, "name.json"), "utf8")).name;
+        const name = JSON.parse(fs13.readFileSync(path14.join(scenesCacheRoot(), d, "name.json"), "utf8")).name;
         if (name && !/^[0-9a-f]{8}$/.test(name)) {
           names3.set(name, [...names3.get(name) ?? [], d]);
         }
@@ -117865,10 +117958,10 @@ function readChangelog() {
     return changelogCache;
   let markdown = null;
   try {
-    const here = path13.dirname(fileURLToPath(import.meta.url));
-    for (const dir of [path13.resolve(here, ".."), path13.resolve(here, "..", ".."), process.cwd()]) {
+    const here = path14.dirname(fileURLToPath(import.meta.url));
+    for (const dir of [path14.resolve(here, ".."), path14.resolve(here, "..", ".."), process.cwd()]) {
       try {
-        markdown = fs13.readFileSync(path13.join(dir, "CHANGES.md"), "utf8");
+        markdown = fs13.readFileSync(path14.join(dir, "CHANGES.md"), "utf8");
         break;
       } catch {
       }
@@ -118238,21 +118331,21 @@ function migrateLegacySpinnerFiles() {
     fs13.mkdirSync(spinnerDir(), { recursive: true });
     let moved = false;
     for (const ext of [".gif", ".png", ".webp", ".jpg", ".jpeg", ".bmp", ".svg"]) {
-      const legacy = path13.join(dataDir(), "spinner" + ext);
+      const legacy = path14.join(dataDir(), "spinner" + ext);
       if (!fs13.existsSync(legacy))
         continue;
-      const dest = path13.join(spinnerDir(), "spinner" + ext);
+      const dest = path14.join(spinnerDir(), "spinner" + ext);
       fs13.rmSync(dest, { force: true });
       fs13.renameSync(legacy, dest);
       moved = true;
-      console.log(`serve: migrated spinner icon ${path13.basename(legacy)} \u2192 spinner/`);
+      console.log(`serve: migrated spinner icon ${path14.basename(legacy)} \u2192 spinner/`);
     }
     if (!moved)
       return;
     const stored = loadConfig();
     const img = stored.taskSpinnerLook?.image;
-    if (typeof img === "string" && SPINNER_FILE_RE.test(path13.basename(img)) && path13.dirname(path13.resolve(img)).toLowerCase() === path13.resolve(dataDir()).toLowerCase()) {
-      stored.taskSpinnerLook = { ...stored.taskSpinnerLook, image: path13.join(spinnerDir(), path13.basename(img)) };
+    if (typeof img === "string" && SPINNER_FILE_RE.test(path14.basename(img)) && path14.dirname(path14.resolve(img)).toLowerCase() === path14.resolve(dataDir()).toLowerCase()) {
+      stored.taskSpinnerLook = { ...stored.taskSpinnerLook, image: path14.join(spinnerDir(), path14.basename(img)) };
       saveConfig(stored);
     }
   } catch (err) {
@@ -118265,11 +118358,11 @@ async function startServe(opts) {
   mediaToken = crypto2.randomBytes(24).toString("hex");
   try {
     fs13.mkdirSync(dataDir(), { recursive: true });
-    fs13.writeFileSync(path13.join(dataDir(), "serve.token"), mediaToken, { encoding: "utf8" });
+    fs13.writeFileSync(path14.join(dataDir(), "serve.token"), mediaToken, { encoding: "utf8" });
   } catch {
   }
   migrateLegacySpinnerFiles();
-  const historyFile = () => path13.join(dataDir(), "history.json");
+  const historyFile = () => path14.join(dataDir(), "history.json");
   function readHistory() {
     try {
       return JSON.parse(fs13.readFileSync(historyFile(), "utf8"));
@@ -118293,12 +118386,12 @@ async function startServe(opts) {
   const applyRef = async (ref) => {
     const config = runtimeConfig();
     if (typeof ref.hash === "string") {
-      const loopPath = path13.join(scenesCacheRoot(), ref.hash, "loop.mp4");
+      const loopPath = path14.join(scenesCacheRoot(), ref.hash, "loop.mp4");
       if (!fs13.existsSync(loopPath))
         throw new Error("unknown scene hash");
       let label = ref.hash.slice(0, 8);
       try {
-        label = JSON.parse(fs13.readFileSync(path13.join(scenesCacheRoot(), ref.hash, "name.json"), "utf8")).name || label;
+        label = JSON.parse(fs13.readFileSync(path14.join(scenesCacheRoot(), ref.hash, "name.json"), "utf8")).name || label;
       } catch {
       }
       const next = {
@@ -118322,7 +118415,7 @@ async function startServe(opts) {
         sceneVideoUrl: void 0
       };
       saveConfig(persisted(next));
-      recordHistory({ label: path13.basename(ref.path), kind: "image", path: ref.path, thumbUrl: `http://127.0.0.1:${apiPort}/media/lib/${encodeURIComponent(path13.basename(ref.path))}` });
+      recordHistory({ label: path14.basename(ref.path), kind: "image", path: ref.path, thumbUrl: `http://127.0.0.1:${apiPort}/media/lib/${encodeURIComponent(path14.basename(ref.path))}` });
       return { windows: await pushConfigToSessions(next).catch(() => 0) };
     }
     throw new Error("provide hash or existing path");
@@ -118404,10 +118497,10 @@ async function startServe(opts) {
         const config = runtimeConfig();
         fs13.mkdirSync(dataDir(), { recursive: true });
         const ext = IMAGE_EXT[m[1]];
-        const safeBase = (typeof body?.name === "string" ? path13.basename(body.name) : "wallpaper").replace(/[\\/:*?"<>|]/g, "_").replace(new RegExp("\\" + ext + "$", "i"), "").trim() || "wallpaper";
-        let dest = path13.join(dataDir(), safeBase + ext);
+        const safeBase = (typeof body?.name === "string" ? path14.basename(body.name) : "wallpaper").replace(/[\\/:*?"<>|]/g, "_").replace(new RegExp("\\" + ext + "$", "i"), "").trim() || "wallpaper";
+        let dest = path14.join(dataDir(), safeBase + ext);
         for (let i2 = 2; fs13.existsSync(dest); i2++) {
-          dest = path13.join(dataDir(), `${safeBase}(${i2})${ext}`);
+          dest = path14.join(dataDir(), `${safeBase}(${i2})${ext}`);
         }
         fs13.writeFileSync(dest, bytes);
         const themeSrc = await themeThumbFor(dest);
@@ -118420,7 +118513,7 @@ async function startServe(opts) {
           sceneVideoUrl: void 0
         };
         saveConfig(persisted(nextCfg));
-        recordHistory({ label: safeBase + ext, kind: "image", path: dest, thumbUrl: `http://127.0.0.1:${apiPort}/media/lib/${encodeURIComponent(path13.basename(dest))}` });
+        recordHistory({ label: safeBase + ext, kind: "image", path: dest, thumbUrl: `http://127.0.0.1:${apiPort}/media/lib/${encodeURIComponent(path14.basename(dest))}` });
         const windows = await pushConfigToSessions(nextCfg).catch(() => 0);
         sendJson(res, 200, { ok: true, windows, ...publicConfig(nextCfg) });
         return;
@@ -118438,14 +118531,14 @@ async function startServe(opts) {
         }
         const ext = m[1] === "image/svg+xml" ? ".svg" : IMAGE_EXT[m[1]];
         const base = slot === "running" ? "spinner" : "spinner-" + slot;
-        const dest = path13.join(spinnerDir(), base + ext);
+        const dest = path14.join(spinnerDir(), base + ext);
         fs13.mkdirSync(spinnerDir(), { recursive: true });
         for (const old of [...Object.values(IMAGE_EXT), ".svg", ".jpeg"]) {
           if (old !== ext)
-            fs13.rmSync(path13.join(spinnerDir(), base + old), { force: true });
+            fs13.rmSync(path14.join(spinnerDir(), base + old), { force: true });
         }
         for (const old of [...Object.values(IMAGE_EXT), ".svg", ".jpeg"]) {
-          fs13.rmSync(path13.join(dataDir(), base + old), { force: true });
+          fs13.rmSync(path14.join(dataDir(), base + old), { force: true });
         }
         fs13.writeFileSync(dest, bytes);
         const config = runtimeConfig();
@@ -118590,12 +118683,12 @@ async function startServe(opts) {
           } else {
             const dir = (() => {
               try {
-                return fs13.statSync(scenePath).isDirectory() ? scenePath : path13.dirname(scenePath);
+                return fs13.statSync(scenePath).isDirectory() ? scenePath : path14.dirname(scenePath);
               } catch {
                 return scenePath;
               }
             })();
-            const probe = JSON.parse(fs13.readFileSync(path13.join(dir, "project.json"), "utf8"));
+            const probe = JSON.parse(fs13.readFileSync(path14.join(dir, "project.json"), "utf8"));
             const w = Number(probe?.general?.properties?.width);
             const h = Number(probe?.general?.properties?.height);
             if (w >= 256 && w <= 3840)
@@ -118632,16 +118725,16 @@ async function startServe(opts) {
           let label = result.hash.slice(0, 8);
           let named = false;
           try {
-            label = JSON.parse(fs13.readFileSync(path13.join(scenesCacheRoot(), result.hash, "name.json"), "utf8")).name || label;
+            label = JSON.parse(fs13.readFileSync(path14.join(scenesCacheRoot(), result.hash, "name.json"), "utf8")).name || label;
             named = true;
           } catch {
           }
           if (!named) {
-            const fallback = weTitleForPath(scenePath) ?? (path13.extname(scenePath) ? path13.basename(scenePath).replace(/\.[^.]+$/, "") : void 0);
+            const fallback = weTitleForPath(scenePath) ?? (path14.extname(scenePath) ? path14.basename(scenePath).replace(/\.[^.]+$/, "") : void 0);
             if (fallback) {
               label = fallback;
               try {
-                fs13.writeFileSync(path13.join(scenesCacheRoot(), result.hash, "name.json"), JSON.stringify({ name: fallback }));
+                fs13.writeFileSync(path14.join(scenesCacheRoot(), result.hash, "name.json"), JSON.stringify({ name: fallback }));
               } catch {
               }
             }
@@ -118693,15 +118786,15 @@ async function startServe(opts) {
       if (req.method === "GET" && url.pathname === "/api/library") {
         let fav = { hashes: [], paths: [] };
         try {
-          fav = JSON.parse(fs13.readFileSync(path13.join(dataDir(), "favorites.json"), "utf8"));
+          fav = JSON.parse(fs13.readFileSync(path14.join(dataDir(), "favorites.json"), "utf8"));
         } catch {
         }
         const images = [];
         for (const f2 of fs13.readdirSync(dataDir())) {
           if (/\.(jpe?g|png|webp|bmp)$/i.test(f2)) {
             try {
-              const p2 = path13.join(dataDir(), f2);
-              images.push({ name: f2, path: p2, mtimeMs: fs13.statSync(p2).mtimeMs, favorite: fav.paths.includes(path13.resolve(p2)) });
+              const p2 = path14.join(dataDir(), f2);
+              images.push({ name: f2, path: p2, mtimeMs: fs13.statSync(p2).mtimeMs, favorite: fav.paths.includes(path14.resolve(p2)) });
             } catch {
             }
           }
@@ -118715,12 +118808,12 @@ async function startServe(opts) {
         const scenes = [];
         try {
           for (const d of fs13.readdirSync(scenesCacheRoot())) {
-            const loop = path13.join(scenesCacheRoot(), d, "loop.mp4");
+            const loop = path14.join(scenesCacheRoot(), d, "loop.mp4");
             try {
               const st = fs13.statSync(loop);
               let name;
               try {
-                name = JSON.parse(fs13.readFileSync(path13.join(scenesCacheRoot(), d, "name.json"), "utf8")).name;
+                name = JSON.parse(fs13.readFileSync(path14.join(scenesCacheRoot(), d, "name.json"), "utf8")).name;
               } catch {
               }
               scenes.push({ hash: d, name, sizeBytes: st.size, mtimeMs: st.mtimeMs, favorite: fav.hashes.includes(d) });
@@ -118741,18 +118834,18 @@ async function startServe(opts) {
         if (name.includes("/") || name.includes("\\") || name.includes(".."))
           throw new Error("invalid name");
         if (body?.kind === "scene" && typeof body?.hash === "string" && /^[a-f0-9]{8,64}$/.test(body.hash)) {
-          const dir = path13.join(scenesCacheRoot(), body.hash);
+          const dir = path14.join(scenesCacheRoot(), body.hash);
           if (!fs13.existsSync(dir))
             throw new Error("unknown scene hash");
-          fs13.writeFileSync(path13.join(dir, "name.json"), JSON.stringify({ name }));
+          fs13.writeFileSync(path14.join(dir, "name.json"), JSON.stringify({ name }));
           sendJson(res, 200, { ok: true });
           return;
         }
         if (body?.kind === "image" && typeof body?.path === "string") {
-          const oldPath = path13.resolve(body.path);
+          const oldPath = path14.resolve(body.path);
           const renamed = renameLibraryImage(oldPath, name);
           const cfg = runtimeConfig();
-          if (cfg.wallpaperPath && path13.resolve(cfg.wallpaperPath) === oldPath) {
+          if (cfg.wallpaperPath && path14.resolve(cfg.wallpaperPath) === oldPath) {
             saveConfig(persisted({ ...cfg, wallpaperPath: renamed }));
           }
           sendJson(res, 200, { ok: true, path: renamed });
@@ -118783,7 +118876,7 @@ async function startServe(opts) {
           if (config.sceneHash === body.hash) {
             throw new Error("\u8BE5\u58C1\u7EB8\u6B63\u5728\u4F7F\u7528\u4E2D \u2014 \u5148\u5207\u6362\u5230\u5176\u4ED6\u58C1\u7EB8\u518D\u5220\u9664");
           }
-          const dir = path13.join(scenesCacheRoot(), body.hash);
+          const dir = path14.join(scenesCacheRoot(), body.hash);
           if (!fs13.existsSync(dir))
             throw new Error("unknown scene hash");
           fs13.rmSync(dir, { recursive: true, force: true });
@@ -118792,18 +118885,18 @@ async function startServe(opts) {
           return;
         }
         if (body?.kind === "image" && typeof body?.path === "string") {
-          const target2 = path13.resolve(body.path);
-          if (config.wallpaperPath && path13.resolve(config.wallpaperPath) === target2) {
+          const target2 = path14.resolve(body.path);
+          if (config.wallpaperPath && path14.resolve(config.wallpaperPath) === target2) {
             throw new Error("\u8BE5\u58C1\u7EB8\u6B63\u5728\u4F7F\u7528\u4E2D \u2014 \u5148\u5207\u6362\u5230\u5176\u4ED6\u58C1\u7EB8\u518D\u5220\u9664");
           }
           if (!isInsideDataDir(target2) || !/\.(jpe?g|png|webp|bmp)$/i.test(target2)) {
             throw new Error("only plugin-managed wallpapers can be deleted here");
           }
           fs13.rmSync(target2, { force: true });
-          const thumb = path13.join(thumbDir(), path13.basename(target2) + ".jpg");
+          const thumb = path14.join(thumbDir(), path14.basename(target2) + ".jpg");
           if (isInsideDataDir(thumb))
             fs13.rmSync(thumb, { force: true });
-          dropFromPlans((e2) => Boolean(e2.path && path13.resolve(e2.path) === target2));
+          dropFromPlans((e2) => Boolean(e2.path && path14.resolve(e2.path) === target2));
           sendJson(res, 200, { ok: true });
           return;
         }
@@ -118876,7 +118969,7 @@ async function startServe(opts) {
               let size = 0;
               const walk = (dir) => {
                 for (const f2 of fs13.readdirSync(dir, { withFileTypes: true })) {
-                  const p2 = path13.join(dir, f2.name);
+                  const p2 = path14.join(dir, f2.name);
                   if (f2.isDirectory())
                     walk(p2);
                   else {
@@ -118887,10 +118980,10 @@ async function startServe(opts) {
                   }
                 }
               };
-              walk(path13.join(scenesCacheRoot(), d));
+              walk(path14.join(scenesCacheRoot(), d));
               let name;
               try {
-                name = JSON.parse(fs13.readFileSync(path13.join(scenesCacheRoot(), d, "name.json"), "utf8")).name;
+                name = JSON.parse(fs13.readFileSync(path14.join(scenesCacheRoot(), d, "name.json"), "utf8")).name;
               } catch {
               }
               entries.push({ hash: d, name, sizeBytes: size });
@@ -118904,7 +118997,7 @@ async function startServe(opts) {
         try {
           for (const f2 of fs13.readdirSync(thumbDir())) {
             try {
-              thumbsBytes += fs13.statSync(path13.join(thumbDir(), f2)).size;
+              thumbsBytes += fs13.statSync(path14.join(thumbDir(), f2)).size;
             } catch {
             }
           }
@@ -118923,7 +119016,7 @@ async function startServe(opts) {
         let savedBytes = 0;
         try {
           for (const d of fs13.readdirSync(scenesCacheRoot())) {
-            const loop = path13.join(scenesCacheRoot(), d, "loop.mp4");
+            const loop = path14.join(scenesCacheRoot(), d, "loop.mp4");
             try {
               if (!fs13.statSync(loop).isFile())
                 continue;
@@ -118981,7 +119074,7 @@ async function startServe(opts) {
             if (config.sceneHash === d)
               continue;
             try {
-              fs13.rmSync(path13.join(scenesCacheRoot(), d), { recursive: true, force: true });
+              fs13.rmSync(path14.join(scenesCacheRoot(), d), { recursive: true, force: true });
               removed++;
             } catch {
             }
@@ -118991,7 +119084,7 @@ async function startServe(opts) {
         if (removed) {
           const rot = normalizeRotation(runtimeConfig().rotation);
           for (const plan of rot.plans)
-            plan.entries = plan.entries.filter((e2) => !e2.hash || fs13.existsSync(path13.join(scenesCacheRoot(), e2.hash, "loop.mp4")));
+            plan.entries = plan.entries.filter((e2) => !e2.hash || fs13.existsSync(path14.join(scenesCacheRoot(), e2.hash, "loop.mp4")));
           saveConfig(persisted({ ...runtimeConfig(), rotation: rot }));
           if (rot.enabled)
             startRotation(true);
@@ -119032,7 +119125,7 @@ async function startServe(opts) {
           withWp.wallpaperPath = incoming.wallpaperPath;
           withWp.mediaType = incoming.mediaType === "video" ? "video" : "image";
           withWp.sceneHash = typeof incoming.sceneHash === "string" ? incoming.sceneHash : void 0;
-          if (withWp.sceneHash && (!/^[a-f0-9]{8,64}$/.test(withWp.sceneHash) || !fs13.existsSync(path13.join(scenesCacheRoot(), withWp.sceneHash, "loop.mp4")))) {
+          if (withWp.sceneHash && (!/^[a-f0-9]{8,64}$/.test(withWp.sceneHash) || !fs13.existsSync(path14.join(scenesCacheRoot(), withWp.sceneHash, "loop.mp4")))) {
             withWp.sceneHash = void 0;
             withWp.mediaType = "image";
           }
@@ -119074,7 +119167,7 @@ async function startServe(opts) {
         sendJson(res, 200, { items: top });
         return;
       }
-      const favoritesFile = () => path13.join(dataDir(), "favorites.json");
+      const favoritesFile = () => path14.join(dataDir(), "favorites.json");
       const readFavorites = () => {
         try {
           return JSON.parse(fs13.readFileSync(favoritesFile(), "utf8"));
@@ -119095,7 +119188,7 @@ async function startServe(opts) {
         if (typeof body?.hash === "string" && /^[a-f0-9]{8,64}$/.test(body.hash)) {
           toggle(fav.hashes, body.hash, body.on === true);
         } else if (typeof body?.path === "string") {
-          toggle(fav.paths, path13.resolve(body.path), body.on === true);
+          toggle(fav.paths, path14.resolve(body.path), body.on === true);
         } else {
           throw new Error("hash or path required");
         }
@@ -119105,7 +119198,7 @@ async function startServe(opts) {
       }
       if (req.method === "GET" && url.pathname === "/api/palette") {
         const config = runtimeConfig();
-        const sourcePath = config.mediaType === "video" && config.sceneHash ? path13.join(scenesCacheRoot(), config.sceneHash, "poster.jpg") : config.wallpaperPath ? await themeThumbFor(config.wallpaperPath) : void 0;
+        const sourcePath = config.mediaType === "video" && config.sceneHash ? path14.join(scenesCacheRoot(), config.sceneHash, "poster.jpg") : config.wallpaperPath ? await themeThumbFor(config.wallpaperPath) : void 0;
         let colors = [];
         if (sourcePath && fs13.existsSync(sourcePath)) {
           try {
@@ -119148,10 +119241,10 @@ async function startServe(opts) {
             type: it.type,
             dir: it.dir,
             importable: it.importable,
-            imported: Boolean(it.imported || map[it.dir.toLowerCase()] && fs13.existsSync(path13.join(scenesCacheRoot(), map[it.dir.toLowerCase()].hash, "loop.mp4"))),
+            imported: Boolean(it.imported || map[it.dir.toLowerCase()] && fs13.existsSync(path14.join(scenesCacheRoot(), map[it.dir.toLowerCase()].hash, "loop.mp4"))),
             source: it.source,
             folder: it.folder ?? null,
-            videoUrl: it.videoFile ? `/media/we-video?s=${it.source}&id=${encodeURIComponent(it.id)}&f=${encodeURIComponent(path13.basename(it.videoFile))}` : null,
+            videoUrl: it.videoFile ? `/media/we-video?s=${it.source}&id=${encodeURIComponent(it.id)}&f=${encodeURIComponent(path14.basename(it.videoFile))}` : null,
             previewUrl: it.previewName ? `/media/we-preview?s=${it.source}&id=${encodeURIComponent(it.id)}&f=${encodeURIComponent(it.previewName)}` : null
           }))
         });
@@ -119177,7 +119270,7 @@ async function startServe(opts) {
           sendJson(res, 400, { error: "bad scene media path" });
           return;
         }
-        const file = path13.join(scenesCacheRoot(), hash, "loop.mp4");
+        const file = path14.join(scenesCacheRoot(), hash, "loop.mp4");
         if (!sendMediaFile(req, res, file)) {
           sendJson(res, 404, { error: "scene media not found" });
         }
@@ -119189,7 +119282,7 @@ async function startServe(opts) {
           sendJson(res, 400, { error: "bad poster path" });
           return;
         }
-        const file = path13.join(scenesCacheRoot(), hash, "poster.jpg");
+        const file = path14.join(scenesCacheRoot(), hash, "poster.jpg");
         if (!sendMediaFile(req, res, file)) {
           sendJson(res, 404, { error: "poster not found" });
         }
@@ -119201,7 +119294,7 @@ async function startServe(opts) {
           sendJson(res, 400, { error: "bad library media path" });
           return;
         }
-        const file = path13.join(dataDir(), name);
+        const file = path14.join(dataDir(), name);
         if (!isInsideDataDir(file) || !sendMediaFile(req, res, file)) {
           sendJson(res, 404, { error: "library media not found" });
         }
@@ -119213,7 +119306,7 @@ async function startServe(opts) {
           sendJson(res, 400, { error: "bad spinner media path" });
           return;
         }
-        const file = path13.join(spinnerDir(), name);
+        const file = path14.join(spinnerDir(), name);
         if (!isInsideDataDir(file) || !sendMediaFile(req, res, file)) {
           sendJson(res, 404, { error: "spinner media not found" });
         }
@@ -119438,7 +119531,7 @@ function validPlanEntries(mode, raw) {
     if (!e2 || typeof e2 !== "object")
       continue;
     const { seconds, time, hash, path: imgPath } = e2;
-    const ref = typeof hash === "string" && /^[a-f0-9]{8,64}$/.test(hash) && fs13.existsSync(path13.join(scenesCacheRoot(), hash, "loop.mp4")) ? { hash } : typeof imgPath === "string" && fs13.existsSync(imgPath) ? { path: imgPath } : void 0;
+    const ref = typeof hash === "string" && /^[a-f0-9]{8,64}$/.test(hash) && fs13.existsSync(path14.join(scenesCacheRoot(), hash, "loop.mp4")) ? { hash } : typeof imgPath === "string" && fs13.existsSync(imgPath) ? { path: imgPath } : void 0;
     if (!ref)
       continue;
     if (mode === "schedule") {
@@ -119520,28 +119613,28 @@ function renameLibraryImage(oldPath, name) {
   if (!isInsideDataDir(oldPath) || !/\.(jpe?g|png|webp|bmp)$/i.test(oldPath)) {
     throw new Error("only plugin-managed wallpapers can be renamed here");
   }
-  const ext = path13.extname(oldPath);
+  const ext = path14.extname(oldPath);
   const safe = name.replace(/[\/:*?"<>|]/g, "").trim() || "wallpaper";
-  let newPath = path13.join(path13.dirname(oldPath), safe + ext);
-  if (path13.resolve(newPath) !== path13.resolve(oldPath)) {
-    if (newPath.toLowerCase() !== path13.resolve(oldPath).toLowerCase()) {
+  let newPath = path14.join(path14.dirname(oldPath), safe + ext);
+  if (path14.resolve(newPath) !== path14.resolve(oldPath)) {
+    if (newPath.toLowerCase() !== path14.resolve(oldPath).toLowerCase()) {
       for (let i2 = 2; fs13.existsSync(newPath); i2++) {
-        newPath = path13.join(path13.dirname(oldPath), `${safe}(${i2})${ext}`);
+        newPath = path14.join(path14.dirname(oldPath), `${safe}(${i2})${ext}`);
       }
     }
     fs13.renameSync(oldPath, newPath);
   }
-  const oldThumb = path13.join(thumbDir(), path13.basename(oldPath) + ".jpg");
+  const oldThumb = path14.join(thumbDir(), path14.basename(oldPath) + ".jpg");
   if (fs13.existsSync(oldThumb)) {
     try {
-      fs13.renameSync(oldThumb, path13.join(thumbDir(), path13.basename(newPath) + ".jpg"));
+      fs13.renameSync(oldThumb, path14.join(thumbDir(), path14.basename(newPath) + ".jpg"));
     } catch {
     }
   }
   return newPath;
 }
 function isInsideDataDir(target2) {
-  const rel = path13.relative(path13.resolve(dataDir()), path13.resolve(target2));
+  const rel = path14.relative(path14.resolve(dataDir()), path14.resolve(target2));
   return rel !== "" && !rel.startsWith("..");
 }
 var MAX_WALLPAPER_BYTES, MAX_BODY_BYTES, POLL_MS, assetsCache, ffmpegPathCache, updateCheckCache, changelogCache, importJob, held, scrubbedUpdaters, mediaToken, IMAGE_EXT, spinnerDir, SPINNER_FILE_RE;
@@ -119579,7 +119672,7 @@ var init_server = __esm({
       "image/gif": ".gif",
       "image/bmp": ".bmp"
     };
-    spinnerDir = () => path13.join(dataDir(), "spinner");
+    spinnerDir = () => path14.join(dataDir(), "spinner");
     SPINNER_FILE_RE = /^spinner\.(gif|png|webp|jpe?g|bmp|svg)$/i;
   }
 });
@@ -119590,7 +119683,7 @@ init_launch();
 init_session();
 init_target();
 import fs14 from "node:fs";
-import path14 from "node:path";
+import path15 from "node:path";
 var USAGE = `zcode-beautify <command> [options]
 
 Global:
@@ -119853,7 +119946,7 @@ async function startServeDetached(cdpPort, apiPort) {
     throw new Error(`a beautify service is already running on http://127.0.0.1:${apiPort} (pid ${already}) \u2014 open its panel, or stop that process first`);
   }
   fs14.mkdirSync(dataDir(), { recursive: true });
-  const logFile = path14.join(dataDir(), "serve.log");
+  const logFile = path15.join(dataDir(), "serve.log");
   const out = fs14.openSync(logFile, "a");
   const child = spawn5(process.execPath, [process.argv[1], "serve", "--port", String(cdpPort), "--api-port", String(apiPort)], { detached: true, stdio: ["ignore", out, out], windowsHide: true });
   child.unref();

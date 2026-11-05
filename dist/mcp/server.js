@@ -3276,8 +3276,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path13) {
-      let input2 = path13;
+    function removeDotSegments(path14) {
+      let input2 = path14;
       const output2 = [];
       let nextSlash = -1;
       let len = 0;
@@ -3686,8 +3686,8 @@ var require_schemes = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path13 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path13 && path13 !== "/" ? path13 : void 0;
+        const path14 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path14 && path14 !== "/" ? path14 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -14767,14 +14767,14 @@ var require_gifutil = __commonJS({
       jimpImage.bitmap.data = bitmapImageToShare.bitmap.data;
       return jimpImage;
     };
-    exports.write = function(path13, frames, spec, encoder) {
+    exports.write = function(path14, frames, spec, encoder) {
       encoder = encoder || defaultCodec;
-      const matches = path13.match(/\.[a-zA-Z]+$/);
+      const matches = path14.match(/\.[a-zA-Z]+$/);
       if (matches !== null && INVALID_SUFFIXES.includes(matches[0].toLowerCase())) {
-        throw new Error(`GIF '${path13}' has an unexpected suffix`);
+        throw new Error(`GIF '${path14}' has an unexpected suffix`);
       }
       return encoder.encodeGif(frames, spec).then((gif2) => {
-        return _writeBinary(path13, gif2.buffer).then(() => {
+        return _writeBinary(path14, gif2.buffer).then(() => {
           return gif2;
         });
       });
@@ -14846,9 +14846,9 @@ var require_gifutil = __commonJS({
         }
       }
     }
-    function _readBinary(path13) {
+    function _readBinary(path14) {
       return new Promise((resolve, reject) => {
-        fs11.readFile(path13, (err, buffer) => {
+        fs11.readFile(path14, (err, buffer) => {
           if (err) {
             return reject(err);
           }
@@ -14856,9 +14856,9 @@ var require_gifutil = __commonJS({
         });
       });
     }
-    function _writeBinary(path13, buffer) {
+    function _writeBinary(path14, buffer) {
       return new Promise((resolve, reject) => {
-        fs11.writeFile(path13, buffer, (err) => {
+        fs11.writeFile(path14, buffer, (err) => {
           if (err) {
             return reject(err);
           }
@@ -16869,9 +16869,9 @@ var require_decoder = __commonJS({
         return a2 < 0 ? 0 : a2 > 255 ? 255 : a2;
       }
       constructor.prototype = {
-        load: function load(path13) {
+        load: function load(path14) {
           var xhr = new XMLHttpRequest();
-          xhr.open("GET", path13, true);
+          xhr.open("GET", path14, true);
           xhr.responseType = "arraybuffer";
           xhr.onload = (function() {
             var data = new Uint8Array(xhr.response || xhr.mozResponseArrayBuffer);
@@ -27774,8 +27774,8 @@ var init_parseUtil = __esm({
     init_errors();
     init_en();
     makeIssue2 = (params) => {
-      const { data, path: path13, errorMaps, issueData } = params;
-      const fullPath = [...path13, ...issueData.path || []];
+      const { data, path: path14, errorMaps, issueData } = params;
+      const fullPath = [...path14, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -28083,11 +28083,11 @@ var init_types2 = __esm({
     init_parseUtil();
     init_util();
     ParseInputLazyPath2 = class {
-      constructor(parent, value, path13, key) {
+      constructor(parent, value, path14, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path13;
+        this._path = path14;
         this._key = key;
       }
       get path() {
@@ -31900,8 +31900,8 @@ var init_parseUtil2 = __esm({
     init_errors2();
     init_en2();
     makeIssue3 = (params) => {
-      const { data, path: path13, errorMaps, issueData } = params;
-      const fullPath = [...path13, ...issueData.path || []];
+      const { data, path: path14, errorMaps, issueData } = params;
+      const fullPath = [...path14, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -32209,11 +32209,11 @@ var init_types3 = __esm({
     init_parseUtil2();
     init_util2();
     ParseInputLazyPath3 = class {
-      constructor(parent, value, path13, key) {
+      constructor(parent, value, path14, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path13;
+        this._path = path14;
         this._key = key;
       }
       get path() {
@@ -36811,8 +36811,8 @@ var init_parseUtil3 = __esm({
     init_errors3();
     init_en3();
     makeIssue4 = (params) => {
-      const { data, path: path13, errorMaps, issueData } = params;
-      const fullPath = [...path13, ...issueData.path || []];
+      const { data, path: path14, errorMaps, issueData } = params;
+      const fullPath = [...path14, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -37120,11 +37120,11 @@ var init_types4 = __esm({
     init_parseUtil3();
     init_util3();
     ParseInputLazyPath4 = class {
-      constructor(parent, value, path13, key) {
+      constructor(parent, value, path14, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path13;
+        this._path = path14;
         this._key = key;
       }
       get path() {
@@ -40965,8 +40965,8 @@ var init_parseUtil4 = __esm({
     init_errors4();
     init_en4();
     makeIssue5 = (params) => {
-      const { data, path: path13, errorMaps, issueData } = params;
-      const fullPath = [...path13, ...issueData.path || []];
+      const { data, path: path14, errorMaps, issueData } = params;
+      const fullPath = [...path14, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -41274,11 +41274,11 @@ var init_types5 = __esm({
     init_parseUtil4();
     init_util4();
     ParseInputLazyPath5 = class {
-      constructor(parent, value, path13, key) {
+      constructor(parent, value, path14, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path13;
+        this._path = path14;
         this._key = key;
       }
       get path() {
@@ -45401,11 +45401,11 @@ var require_Mime = __commonJS({
         }
       }
     };
-    Mime.prototype.getType = function(path13) {
-      path13 = String(path13);
-      let last = path13.replace(/^.*[/\\]/, "").toLowerCase();
+    Mime.prototype.getType = function(path14) {
+      path14 = String(path14);
+      let last = path14.replace(/^.*[/\\]/, "").toLowerCase();
       let ext = last.replace(/^.*\./, "").toLowerCase();
-      let hasPath = last.length < path13.length;
+      let hasPath = last.length < path14.length;
       let hasDot = ext.length < last.length - 1;
       return (hasDot || !hasPath) && this._types[ext] || null;
     };
@@ -51943,8 +51943,8 @@ function isTokenizerStreamBoundsError(error62) {
   }
   return /strtok3[/\\]lib[/\\]stream[/\\]/.test(error62.stack);
 }
-async function fileTypeFromFile(path13, options) {
-  return new FileTypeParser2(options).fromFile(path13, options);
+async function fileTypeFromFile(path14, options) {
+  return new FileTypeParser2(options).fromFile(path14, options);
 }
 async function fileTypeFromStream(stream, options) {
   return new FileTypeParser2(options).fromStream(stream);
@@ -51975,9 +51975,9 @@ var init_file_type = __esm({
           }
         }
       }
-      async fromFile(path13) {
+      async fromFile(path14) {
         this.options.signal?.throwIfAborted();
-        const fileHandle = await fs3.open(path13, fileSystemConstants.O_RDONLY | fileSystemConstants.O_NONBLOCK);
+        const fileHandle = await fs3.open(path14, fileSystemConstants.O_RDONLY | fileSystemConstants.O_NONBLOCK);
         const fileStat = await fileHandle.stat();
         if (!fileStat.isFile()) {
           await fileHandle.close();
@@ -51986,7 +51986,7 @@ var init_file_type = __esm({
         const tokenizer = new FileTokenizer(fileHandle, {
           ...this.getTokenizerOptions(),
           fileInfo: {
-            path: path13,
+            path: path14,
             size: fileStat.size
           }
         });
@@ -52321,9 +52321,9 @@ function createJimp({ plugins: pluginsArg, formats: formatsArg } = {}) {
      * await image.write("test/output.png");
      * ```
      */
-    async write(path13, options) {
-      const mimeType = import_lite.default.getType(path13);
-      await writeFile(path13, await this.getBuffer(mimeType, options));
+    async write(path14, options) {
+      const mimeType = import_lite.default.getType(path14);
+      await writeFile(path14, await this.getBuffer(mimeType, options));
     }
     /**
      * Clone the image into a new Jimp instance.
@@ -52972,8 +52972,8 @@ var init_parseUtil5 = __esm({
     init_errors5();
     init_en5();
     makeIssue6 = (params) => {
-      const { data, path: path13, errorMaps, issueData } = params;
-      const fullPath = [...path13, ...issueData.path || []];
+      const { data, path: path14, errorMaps, issueData } = params;
+      const fullPath = [...path14, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -53281,11 +53281,11 @@ var init_types6 = __esm({
     init_parseUtil5();
     init_util6();
     ParseInputLazyPath6 = class {
-      constructor(parent, value, path13, key) {
+      constructor(parent, value, path14, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path13;
+        this._path = path14;
         this._key = key;
       }
       get path() {
@@ -57730,8 +57730,8 @@ var init_parseUtil6 = __esm({
     init_errors6();
     init_en6();
     makeIssue7 = (params) => {
-      const { data, path: path13, errorMaps, issueData } = params;
-      const fullPath = [...path13, ...issueData.path || []];
+      const { data, path: path14, errorMaps, issueData } = params;
+      const fullPath = [...path14, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -58039,11 +58039,11 @@ var init_types7 = __esm({
     init_parseUtil6();
     init_util7();
     ParseInputLazyPath7 = class {
-      constructor(parent, value, path13, key) {
+      constructor(parent, value, path14, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path13;
+        this._path = path14;
         this._key = key;
       }
       get path() {
@@ -61897,8 +61897,8 @@ var init_parseUtil7 = __esm({
     init_errors7();
     init_en7();
     makeIssue8 = (params) => {
-      const { data, path: path13, errorMaps, issueData } = params;
-      const fullPath = [...path13, ...issueData.path || []];
+      const { data, path: path14, errorMaps, issueData } = params;
+      const fullPath = [...path14, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -62206,11 +62206,11 @@ var init_types8 = __esm({
     init_parseUtil7();
     init_util8();
     ParseInputLazyPath8 = class {
-      constructor(parent, value, path13, key) {
+      constructor(parent, value, path14, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path13;
+        this._path = path14;
         this._key = key;
       }
       get path() {
@@ -66191,8 +66191,8 @@ var init_parseUtil8 = __esm({
     init_errors8();
     init_en8();
     makeIssue9 = (params) => {
-      const { data, path: path13, errorMaps, issueData } = params;
-      const fullPath = [...path13, ...issueData.path || []];
+      const { data, path: path14, errorMaps, issueData } = params;
+      const fullPath = [...path14, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -66500,11 +66500,11 @@ var init_types9 = __esm({
     init_parseUtil8();
     init_util9();
     ParseInputLazyPath9 = class {
-      constructor(parent, value, path13, key) {
+      constructor(parent, value, path14, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path13;
+        this._path = path14;
         this._key = key;
       }
       get path() {
@@ -70353,8 +70353,8 @@ var init_parseUtil9 = __esm({
     init_errors9();
     init_en9();
     makeIssue10 = (params) => {
-      const { data, path: path13, errorMaps, issueData } = params;
-      const fullPath = [...path13, ...issueData.path || []];
+      const { data, path: path14, errorMaps, issueData } = params;
+      const fullPath = [...path14, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -70662,11 +70662,11 @@ var init_types10 = __esm({
     init_parseUtil9();
     init_util10();
     ParseInputLazyPath10 = class {
-      constructor(parent, value, path13, key) {
+      constructor(parent, value, path14, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path13;
+        this._path = path14;
         this._key = key;
       }
       get path() {
@@ -74552,8 +74552,8 @@ var init_parseUtil10 = __esm({
     init_errors10();
     init_en10();
     makeIssue11 = (params) => {
-      const { data, path: path13, errorMaps, issueData } = params;
-      const fullPath = [...path13, ...issueData.path || []];
+      const { data, path: path14, errorMaps, issueData } = params;
+      const fullPath = [...path14, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -74861,11 +74861,11 @@ var init_types11 = __esm({
     init_parseUtil10();
     init_util11();
     ParseInputLazyPath11 = class {
-      constructor(parent, value, path13, key) {
+      constructor(parent, value, path14, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path13;
+        this._path = path14;
         this._key = key;
       }
       get path() {
@@ -78703,8 +78703,8 @@ var init_parseUtil11 = __esm({
     init_errors11();
     init_en11();
     makeIssue12 = (params) => {
-      const { data, path: path13, errorMaps, issueData } = params;
-      const fullPath = [...path13, ...issueData.path || []];
+      const { data, path: path14, errorMaps, issueData } = params;
+      const fullPath = [...path14, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -79012,11 +79012,11 @@ var init_types12 = __esm({
     init_parseUtil11();
     init_util12();
     ParseInputLazyPath12 = class {
-      constructor(parent, value, path13, key) {
+      constructor(parent, value, path14, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path13;
+        this._path = path14;
         this._key = key;
       }
       get path() {
@@ -83089,8 +83089,8 @@ var init_parseUtil12 = __esm({
     init_errors12();
     init_en12();
     makeIssue13 = (params) => {
-      const { data, path: path13, errorMaps, issueData } = params;
-      const fullPath = [...path13, ...issueData.path || []];
+      const { data, path: path14, errorMaps, issueData } = params;
+      const fullPath = [...path14, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -83398,11 +83398,11 @@ var init_types13 = __esm({
     init_parseUtil12();
     init_util13();
     ParseInputLazyPath13 = class {
-      constructor(parent, value, path13, key) {
+      constructor(parent, value, path14, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path13;
+        this._path = path14;
         this._key = key;
       }
       get path() {
@@ -87259,8 +87259,8 @@ var init_parseUtil13 = __esm({
     init_errors13();
     init_en13();
     makeIssue14 = (params) => {
-      const { data, path: path13, errorMaps, issueData } = params;
-      const fullPath = [...path13, ...issueData.path || []];
+      const { data, path: path14, errorMaps, issueData } = params;
+      const fullPath = [...path14, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -87568,11 +87568,11 @@ var init_types14 = __esm({
     init_parseUtil13();
     init_util14();
     ParseInputLazyPath14 = class {
-      constructor(parent, value, path13, key) {
+      constructor(parent, value, path14, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path13;
+        this._path = path14;
         this._key = key;
       }
       get path() {
@@ -91586,8 +91586,8 @@ var init_parseUtil14 = __esm({
     init_errors14();
     init_en14();
     makeIssue15 = (params) => {
-      const { data, path: path13, errorMaps, issueData } = params;
-      const fullPath = [...path13, ...issueData.path || []];
+      const { data, path: path14, errorMaps, issueData } = params;
+      const fullPath = [...path14, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -91895,11 +91895,11 @@ var init_types16 = __esm({
     init_parseUtil14();
     init_util15();
     ParseInputLazyPath15 = class {
-      constructor(parent, value, path13, key) {
+      constructor(parent, value, path14, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path13;
+        this._path = path14;
         this._key = key;
       }
       get path() {
@@ -95863,8 +95863,8 @@ var init_parseUtil15 = __esm({
     init_errors15();
     init_en15();
     makeIssue16 = (params) => {
-      const { data, path: path13, errorMaps, issueData } = params;
-      const fullPath = [...path13, ...issueData.path || []];
+      const { data, path: path14, errorMaps, issueData } = params;
+      const fullPath = [...path14, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -96172,11 +96172,11 @@ var init_types17 = __esm({
     init_parseUtil15();
     init_util16();
     ParseInputLazyPath16 = class {
-      constructor(parent, value, path13, key) {
+      constructor(parent, value, path14, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path13;
+        this._path = path14;
         this._key = key;
       }
       get path() {
@@ -102913,8 +102913,8 @@ var init_parseUtil16 = __esm({
     init_errors16();
     init_en16();
     makeIssue17 = (params) => {
-      const { data, path: path13, errorMaps, issueData } = params;
-      const fullPath = [...path13, ...issueData.path || []];
+      const { data, path: path14, errorMaps, issueData } = params;
+      const fullPath = [...path14, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -103222,11 +103222,11 @@ var init_types18 = __esm({
     init_parseUtil16();
     init_util17();
     ParseInputLazyPath17 = class {
-      constructor(parent, value, path13, key) {
+      constructor(parent, value, path14, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path13;
+        this._path = path14;
         this._key = key;
       }
       get path() {
@@ -118539,7 +118539,7 @@ var VERSION;
 var init_version = __esm({
   "dist/version.js"() {
     "use strict";
-    VERSION = "0.6.1";
+    VERSION = "0.6.3";
   }
 });
 
@@ -119241,6 +119241,8 @@ var init_dependencyCheck = __esm({
 
 // dist/core/weLauncher.js
 import { spawn as spawn2 } from "node:child_process";
+import { readFileSync } from "node:fs";
+import path6 from "node:path";
 async function windowIsBlack(title) {
   const script = `
 Add-Type -AssemblyName System.Drawing
@@ -119314,7 +119316,19 @@ async function closeSceneWindow(handle, wallpaperExePath) {
   const exe = wallpaperExePath ?? (await checkWallpaperEngine()).path;
   if (!exe)
     throw new SceneWindowError("Wallpaper Engine not found \u2014 cannot close scene window");
+  const closeResult = await postWmCloseByTitle(handle.title);
+  if (closeResult === "gone")
+    return;
+  if (closeResult === "sent") {
+    const deadline2 = Date.now() + 1e4;
+    while (Date.now() < deadline2) {
+      if (await findWindowOnce(handle.title) === null)
+        return;
+      await sleep(300);
+    }
+  }
   await exec2(exe, ["-control", "closeWallpaper", "-playInWindow", handle.title], { timeout: 1e4 });
+  await restoreDesktopWallpapers(exe);
   const deadline = Date.now() + 1e4;
   while (Date.now() < deadline) {
     const still = await findWindowOnce(handle.title);
@@ -119323,6 +119337,37 @@ async function closeSceneWindow(handle, wallpaperExePath) {
     await sleep(300);
   }
   throw new SceneWindowError(`Window "${handle.title}" still present 10s after closeWallpaper`);
+}
+async function postWmCloseByTitle(title) {
+  const script = `${PS_WINDOW_HELPERS}
+Add-Type -Namespace N -Name Msg -MemberDefinition '[DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l);'
+$h = Find-WindowByTitle '${title.replace(/'/g, "''")}'
+if ($null -ne $h) { [N.Msg]::PostMessage([IntPtr]$h, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null; Write-Output "sent" } else { Write-Output "gone" }`;
+  try {
+    const { stdout } = await exec2("powershell", ["-NoProfile", "-Command", script], { timeout: 15e3 });
+    return stdout.trim() === "sent" ? "sent" : "gone";
+  } catch {
+    return "error";
+  }
+}
+async function restoreDesktopWallpapers(exe) {
+  try {
+    const cfgPath = path6.join(path6.dirname(exe), "config.json");
+    const cfg = JSON.parse(readFileSync(cfgPath, "utf8"));
+    const files = [];
+    for (const v of Object.values(cfg)) {
+      const sel = v?.general?.wallpaperconfig?.selectedwallpapers;
+      if (sel)
+        for (const m of Object.values(sel)) {
+          if (typeof m?.file === "string")
+            files.push(m.file);
+        }
+    }
+    for (const f2 of files) {
+      await exec2(exe, ["-control", "openWallpaper", "-file", f2], { timeout: 1e4 }).catch(() => void 0);
+    }
+  } catch {
+  }
 }
 async function waitForWindow(title, timeoutMs) {
   const script = `${PS_WINDOW_HELPERS}
@@ -119437,9 +119482,9 @@ function Measure-Client([IntPtr]$h) {
 
 // dist/core/recorder.js
 import { mkdirSync, rmSync } from "node:fs";
-import path6 from "node:path";
+import path7 from "node:path";
 async function recordWindowBackground(handle, out, opts, ffmpeg) {
-  const seqDir = path6.join(path6.dirname(path6.resolve(out)), `seq-${process.pid}-${Date.now().toString(36)}`);
+  const seqDir = path7.join(path7.dirname(path7.resolve(out)), `seq-${process.pid}-${Date.now().toString(36)}`);
   mkdirSync(seqDir, { recursive: true });
   const frameMs = Math.max(20, Math.round(1e3 / opts.fps));
   const script = `
@@ -119459,6 +119504,13 @@ $r = New-Object PW+RECT
 $w = $r.R - $r.L; $h = $r.B - $r.T
 if ($w -le 0 -or $h -le 0) { Write-Output "0"; exit 1 }
 $dir = '${seqDir.replace(/\\/g, "\\\\")}'
+# JPEG (quality 95) instead of PNG: the GDI+ PNG encoder ran ~300ms/frame on
+# 2K/4K client areas, throttling the loop to ~3 real fps (a 15s capture came
+# out as 47 frames = 1.57s of footage and broke the crossfade). JPEG encodes
+# several times faster and the loop is re-encoded from the sequence anyway.
+$enc = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object { $_.MimeType -eq 'image/jpeg' }
+$ep = New-Object System.Drawing.Imaging.EncoderParameters(1)
+$ep.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter([System.Drawing.Imaging.Encoder]::Quality, [long]95)
 $sw = [System.Diagnostics.Stopwatch]::StartNew()
 $n = 0
 while ($sw.ElapsedMilliseconds -lt ${opts.duration * 1e3}) {
@@ -119470,11 +119522,12 @@ while ($sw.ElapsedMilliseconds -lt ${opts.duration * 1e3}) {
   $hdc = $g.GetHdc()
   [PW]::PrintWindow($target, $hdc, 3) | Out-Null   # PW_CLIENTONLY|PW_RENDERFULLCONTENT
   $g.ReleaseHdc($hdc); $g.Dispose()
-  $bmp.Save((Join-Path $dir ('f_{0:d6}.png' -f $n)), [System.Drawing.Imaging.ImageFormat]::Png)
+  $bmp.Save((Join-Path $dir ('f_{0:d6}.jpg' -f $n)), $enc, $ep)
   $bmp.Dispose()
   $n++
 }
 $sw.Stop()
+$ep.Dispose()
 Write-Output $n`;
   let frames = 0;
   try {
@@ -119491,6 +119544,8 @@ Write-Output $n`;
     throw new RecordError(`PrintWindow captured too few frames (${frames})`);
   const outW = opts.outWidth ?? 1920;
   const outH = opts.outHeight ?? 1080;
+  const avgFps = frames / opts.duration;
+  const framerate = avgFps < opts.fps * 0.9 ? `${frames}/${opts.duration}` : String(opts.fps);
   try {
     await exec3(ffmpeg, [
       "-y",
@@ -119498,9 +119553,9 @@ Write-Output $n`;
       "-loglevel",
       "warning",
       "-framerate",
-      String(opts.fps),
+      framerate,
       "-i",
-      path6.join(seqDir, "f_%06d.png"),
+      path7.join(seqDir, "f_%06d.jpg"),
       "-vf",
       `scale=${outW}:${outH}`,
       "-c:v",
@@ -119517,18 +119572,20 @@ Write-Output $n`;
   } finally {
     rmSync(seqDir, { recursive: true, force: true });
   }
+  return { frames, avgFps };
 }
 async function recordSceneWindow(handle, out, opts, ffmpegPath) {
   const ffmpeg = ffmpegPath ?? (await checkFfmpeg()).path;
   if (!ffmpeg)
     throw new RecordError("ffmpeg not found \u2014 cannot record scene window");
-  mkdirSync(path6.dirname(path6.resolve(out)), { recursive: true });
-  await recordWindowBackground(handle, out, {
+  mkdirSync(path7.dirname(path7.resolve(out)), { recursive: true });
+  const rec = await recordWindowBackground(handle, out, {
     duration: opts.duration,
     fps: opts.fps,
     outWidth: opts.outWidth ?? 1920,
     outHeight: opts.outHeight ?? 1080
   }, ffmpeg);
+  return rec;
 }
 async function analyzeBlackness(file2, ffmpegPath) {
   const ffmpeg = ffmpegPath ?? (await checkFfmpeg()).path;
@@ -119592,45 +119649,54 @@ var init_recorder = __esm({
 
 // dist/core/loopProcessor.js
 import { mkdirSync as mkdirSync2, rmSync as rmSync2, writeFileSync } from "node:fs";
-import path7 from "node:path";
+import path8 from "node:path";
 async function makeSeamless(input2, output2, fadeSec, ffmpegPath, options = {}) {
   const ffmpeg = ffmpegPath ?? (await checkFfmpeg()).path;
   if (!ffmpeg)
     throw new LoopError("ffmpeg not found \u2014 cannot process loop");
   const info = await probeVideoInfo(input2, ffmpeg);
   const fullDuration = info?.duration ?? await probeDuration(input2, ffmpeg);
-  if (!Number.isFinite(fullDuration) || fullDuration <= fadeSec + 1) {
-    throw new LoopError(`Input too short for a ${fadeSec}s crossfade (duration ${fullDuration}s)`);
+  if (!Number.isFinite(fullDuration) || fullDuration <= 0.2) {
+    throw new LoopError(`Input too short to loop (duration ${fullDuration}s)`);
+  }
+  let fade = fadeSec;
+  if (fullDuration <= fade * 2 + 0.1) {
+    fade = Math.max(0.2, fullDuration / 4);
   }
   const duration3 = Math.min(fullDuration, options.seconds ?? fullDuration);
   const startAt = Math.min(options.startAt ?? 0, fullDuration - duration3);
-  if (duration3 <= fadeSec + 1) {
-    throw new LoopError(`Truncated input too short for a ${fadeSec}s crossfade (duration ${duration3}s)`);
+  if (duration3 <= fade * 2 + 0.1) {
+    if (fullDuration <= fade * 2 + 0.1) {
+      await makeSeamlessPlain(input2, output2, ffmpeg, { maxWidth: options.maxWidth });
+      const plainDuration = await probeDuration(output2, ffmpeg);
+      return { inputDuration: fullDuration, outputDuration: plainDuration };
+    }
+    throw new LoopError(`Truncated input too short for a ${fade}s crossfade (duration ${duration3}s)`);
   }
-  mkdirSync2(path7.dirname(path7.resolve(output2)), { recursive: true });
-  const mainSeconds = Math.max(0, duration3 - 2 * fadeSec);
+  mkdirSync2(path8.dirname(path8.resolve(output2)), { recursive: true });
+  const mainSeconds = Math.max(0, duration3 - 2 * fade);
   const queueBytes = info ? info.fps * mainSeconds * info.width * info.height * 1.5 : Infinity;
   if (queueBytes > SINGLE_PASS_BUDGET) {
     await makeSeamlessTwoPass(input2, output2, ffmpeg, {
       duration: duration3,
       startAt,
-      fadeSec,
+      fadeSec: fade,
       maxWidth: options.maxWidth
     });
     const twoPassDuration = await probeDuration(output2, ffmpeg);
     return { inputDuration: duration3, outputDuration: twoPassDuration };
   }
-  const tailStart = duration3 - fadeSec;
-  const mainEnd = duration3 - fadeSec;
+  const tailStart = duration3 - fade;
+  const mainEnd = duration3 - fade;
   const scale = options.maxWidth && options.maxWidth > 0 ? `scale=w='min(${options.maxWidth}\\,iw)':h=-2,` : "";
   const filter = [
     `[0:v]split[base][src]`,
     // crossfade base: the source tail, head image fades in over it
     `[src]trim=start=${tailStart.toFixed(4)},setpts=PTS-STARTPTS[tail]`,
-    `[base]trim=end=${fadeSec.toFixed(4)},setpts=PTS-STARTPTS,format=yuva420p,fade=t=in:d=${fadeSec.toFixed(4)}:alpha=1[head]`,
+    `[base]trim=end=${fade.toFixed(4)},setpts=PTS-STARTPTS,format=yuva420p,fade=t=in:d=${fade.toFixed(4)}:alpha=1[head]`,
     `[tail][head]overlay=format=auto[xfade]`,
     // main body: the source between the crossfade end and the tail start
-    `[base]trim=start=${fadeSec.toFixed(4)}:end=${mainEnd.toFixed(4)},setpts=PTS-STARTPTS[main]`,
+    `[base]trim=start=${fade.toFixed(4)}:end=${mainEnd.toFixed(4)},setpts=PTS-STARTPTS[main]`,
     `[xfade][main]concat=n=2:v=1:a=0[joined]`,
     `[joined]${scale}format=yuv420p[out]`
   ].join(";");
@@ -119747,6 +119813,31 @@ async function makeSeamlessTwoPass(input2, output2, ffmpeg, spec) {
     }
   }
 }
+async function makeSeamlessPlain(input2, output2, ffmpeg, spec) {
+  const scale = spec.maxWidth && spec.maxWidth > 0 ? `scale=w='min(${spec.maxWidth}\\,iw)':h=-2,` : "";
+  await exec4(ffmpeg, [
+    "-y",
+    "-hide_banner",
+    "-loglevel",
+    "warning",
+    "-i",
+    input2,
+    "-vf",
+    `${scale}format=yuv420p`,
+    "-c:v",
+    "libx264",
+    "-crf",
+    "18",
+    "-preset",
+    "veryfast",
+    "-pix_fmt",
+    "yuv420p",
+    "-movflags",
+    "+faststart",
+    "-an",
+    output2
+  ], { timeout: 6e5, maxBuffer: 16 * 1024 * 1024 });
+}
 async function probeVideoInfo(file2, ffmpegPath) {
   const ffprobe = ffmpegPath.replace(/ffmpeg(\.exe)?$/i, "ffprobe$1");
   try {
@@ -119802,12 +119893,12 @@ var init_loopProcessor = __esm({
 // dist/core/cacheManager.js
 import crypto from "node:crypto";
 import fs8 from "node:fs";
-import path8 from "node:path";
+import path9 from "node:path";
 function scenesCacheRoot() {
-  return path8.join(dataDir(), "scenes");
+  return path9.join(dataDir(), "scenes");
 }
 function getCachePath(hash2) {
-  return path8.join(scenesCacheRoot(), hash2, "loop.mp4");
+  return path9.join(scenesCacheRoot(), hash2, "loop.mp4");
 }
 function hasCache(hash2) {
   try {
@@ -119839,7 +119930,7 @@ function enforceLimit(maxBytes) {
     return 0;
   }
   const sized = entries.filter((e2) => e2.isDirectory()).map((e2) => {
-    const dir = path8.join(root, e2.name);
+    const dir = path9.join(root, e2.name);
     try {
       return { dir, size: dirSize(dir), lru: lastUseMs(dir) };
     } catch {
@@ -119891,7 +119982,7 @@ function fingerprint(p2) {
         return;
       }
       for (const item of items) {
-        const childAbs = path8.join(abs, item.name);
+        const childAbs = path9.join(abs, item.name);
         const childRel = rel ? `${rel}/${item.name}` : item.name;
         if (item.isDirectory()) {
           walk(childAbs, childRel);
@@ -119935,7 +120026,7 @@ function dirSize(dir) {
       return;
     }
     for (const item of items) {
-      const child = path8.join(dir2, item.name);
+      const child = path9.join(dir2, item.name);
       if (item.isDirectory())
         walkSize(child);
       else if (item.isFile()) {
@@ -119961,12 +120052,12 @@ function lastUseMs(dir) {
   }
   for (const item of items) {
     try {
-      const st = fs8.statSync(path8.join(dir, item.name));
+      const st = fs8.statSync(path9.join(dir, item.name));
       consider(st);
       if (item.isDirectory()) {
-        for (const inner of fs8.readdirSync(path8.join(dir, item.name), { withFileTypes: true })) {
+        for (const inner of fs8.readdirSync(path9.join(dir, item.name), { withFileTypes: true })) {
           try {
-            consider(fs8.statSync(path8.join(dir, item.name, inner.name)));
+            consider(fs8.statSync(path9.join(dir, item.name, inner.name)));
           } catch {
           }
         }
@@ -119994,10 +120085,10 @@ __export(scenePipeline_exports, {
   resolveSceneInput: () => resolveSceneInput
 });
 import fs9 from "node:fs";
-import path9 from "node:path";
+import path10 from "node:path";
 function findVideoInDir(dir) {
   for (const subdir of ["", "files"]) {
-    const base = path9.join(dir, subdir);
+    const base = path10.join(dir, subdir);
     let entries;
     try {
       entries = fs9.readdirSync(base);
@@ -120006,7 +120097,7 @@ function findVideoInDir(dir) {
     }
     const hit = entries.find((e2) => /\.(mp4|webm)$/i.test(e2));
     if (hit)
-      return path9.join(base, hit);
+      return path10.join(base, hit);
   }
   return void 0;
 }
@@ -120021,11 +120112,11 @@ function resolveSceneInput(input2) {
     return input2;
   if (input2.toLowerCase().endsWith(".pkg"))
     return input2;
-  let dir = path9.dirname(path9.resolve(input2));
+  let dir = path10.dirname(path10.resolve(input2));
   for (let hop = 0; hop < 4; hop++) {
-    if (fs9.existsSync(path9.join(dir, "project.json")))
+    if (fs9.existsSync(path10.join(dir, "project.json")))
       return dir;
-    const parent = path9.dirname(dir);
+    const parent = path10.dirname(dir);
     if (parent === dir)
       break;
     dir = parent;
@@ -120070,7 +120161,7 @@ async function importScene(pkgPath, onProgress = () => void 0, options = {}, ffm
     fadeSec: opts.fadeSec
   });
   const loopPath = getCachePath(hash2);
-  const posterPath = path9.join(path9.dirname(loopPath), "poster.jpg");
+  const posterPath = path10.join(path10.dirname(loopPath), "poster.jpg");
   if (hasCache(hash2)) {
     onProgress("cache-hit", hash2);
     touchCache(hash2);
@@ -120093,7 +120184,7 @@ async function importScene(pkgPath, onProgress = () => void 0, options = {}, ffm
     onProgress("poster");
     await extractPoster(tmpLoop, posterPath, ffmpegPath);
     onProgress("saving", hash2);
-    fs9.mkdirSync(path9.dirname(loopPath), { recursive: true });
+    fs9.mkdirSync(path10.dirname(loopPath), { recursive: true });
     fs9.renameSync(tmpLoop, loopPath);
     const blackness = await analyzeBlackness(loopPath, ffmpegPath);
     enforceLimit(opts.maxCacheBytes);
@@ -120105,13 +120196,13 @@ async function importScene(pkgPath, onProgress = () => void 0, options = {}, ffm
     if (fs9.statSync(pkgPath).isDirectory()) {
       let declared;
       try {
-        declared = JSON.parse(fs9.readFileSync(path9.join(pkgPath, "project.json"), "utf8")).file;
+        declared = JSON.parse(fs9.readFileSync(path10.join(pkgPath, "project.json"), "utf8")).file;
       } catch {
       }
-      const name = declared && /\.pkg$/i.test(declared) && fs9.existsSync(path9.join(pkgPath, declared)) ? declared : fs9.readdirSync(pkgPath).find((e2) => /\.pkg$/i.test(e2));
+      const name = declared && /\.pkg$/i.test(declared) && fs9.existsSync(path10.join(pkgPath, declared)) ? declared : fs9.readdirSync(pkgPath).find((e2) => /\.pkg$/i.test(e2));
       if (!name)
         throw new SceneImportError(`No scene.pkg inside: ${pkgPath}`);
-      pkgFile = path9.join(pkgPath, name);
+      pkgFile = path10.join(pkgPath, name);
     }
   } catch (err) {
     if (err instanceof SceneImportError)
@@ -120128,9 +120219,10 @@ async function importScene(pkgPath, onProgress = () => void 0, options = {}, ffm
         throw new SceneWindowBlackError("\u7A97\u53E3\u6E32\u67D3\u672A\u9644\u7740(\u9884\u68C0\u5E27\u5168\u9ED1)");
       }
       onProgress("recording", `${opts.duration}s @ ${opts.fps}fps`);
-      const rawPath2 = path9.join(path9.dirname(loopPath), `raw-${Date.now()}.mp4`);
-      fs9.mkdirSync(path9.dirname(rawPath2), { recursive: true });
-      await recordSceneWindow(handle, rawPath2, { duration: opts.duration, fps: opts.fps, outWidth: opts.width, outHeight: opts.height }, ffmpegPath);
+      const rawPath2 = path10.join(path10.dirname(loopPath), `raw-${Date.now()}.mp4`);
+      fs9.mkdirSync(path10.dirname(rawPath2), { recursive: true });
+      const rec = await recordSceneWindow(handle, rawPath2, { duration: opts.duration, fps: opts.fps, outWidth: opts.width, outHeight: opts.height }, ffmpegPath);
+      onProgress("recorded", `${rec.frames} frames (avg ${rec.avgFps.toFixed(1)} fps)`);
       return { rawPath: rawPath2 };
     } finally {
       onProgress("closing");
@@ -120171,7 +120263,7 @@ async function importScene(pkgPath, onProgress = () => void 0, options = {}, ffm
     onProgress("poster");
     await extractPoster(tmpLoop, posterPath, ffmpegPath);
     onProgress("saving", hash2);
-    fs9.mkdirSync(path9.dirname(loopPath), { recursive: true });
+    fs9.mkdirSync(path10.dirname(loopPath), { recursive: true });
     fs9.renameSync(tmpLoop, loopPath);
     fs9.rmSync(rawPath, { force: true });
     enforceLimit(opts.maxCacheBytes);
@@ -120188,14 +120280,15 @@ async function extractPoster(loopFile, posterPath, ffmpegPath) {
   const ffmpeg = ffmpegPath ?? (await checkFfmpeg()).path;
   if (!ffmpeg)
     throw new SceneImportError("ffmpeg not found");
-  fs9.mkdirSync(path9.dirname(path9.resolve(posterPath)), { recursive: true });
+  fs9.mkdirSync(path10.dirname(path10.resolve(posterPath)), { recursive: true });
+  const dur = await probeDuration(loopFile, ffmpeg);
+  const ss = Number.isFinite(dur) && dur > 0 ? Math.min(1, dur * 0.4) : 0;
   await execFileP(ffmpeg, [
     "-y",
     "-loglevel",
     "error",
     "-ss",
-    "1",
-    // skip the crossfade's darkest opening moment
+    ss.toFixed(3),
     "-i",
     loopFile,
     "-frames:v",
@@ -120437,8 +120530,8 @@ __export(experimental_exports, {
   spawnServeDetached: () => spawnServeDetached
 });
 import { spawn as spawn3 } from "node:child_process";
-import { existsSync as existsSync2, readFileSync } from "node:fs";
-import path11 from "node:path";
+import { existsSync as existsSync2, readFileSync as readFileSync2 } from "node:fs";
+import path12 from "node:path";
 function spawnServeDetached(apiPort, cliJs) {
   fetch(`http://127.0.0.1:${apiPort}/api/health`, { signal: AbortSignal.timeout(1500) }).then((r2) => {
     if (!r2.ok)
@@ -120480,9 +120573,9 @@ async function teardownLive() {
   const cfg = loadConfig();
   const port = cfg.port ?? target().cdpPort;
   try {
-    const tokenFile = path11.join(dataDir(), "serve.token");
+    const tokenFile = path12.join(dataDir(), "serve.token");
     if (existsSync2(tokenFile)) {
-      const token = readFileSync(tokenFile, "utf8").trim();
+      const token = readFileSync2(tokenFile, "utf8").trim();
       const apiPort = cfg.apiPort ?? target().apiPort;
       const res = await fetch(`http://127.0.0.1:${apiPort}/api/experimental/disable`, {
         method: "POST",
@@ -120526,7 +120619,7 @@ var init_experimental = __esm({
 
 // dist/mcp/server.js
 import { existsSync as existsSync3, statSync } from "node:fs";
-import path12 from "node:path";
+import path13 from "node:path";
 
 // node_modules/zod/v3/helpers/util.js
 var util;
@@ -120902,8 +120995,8 @@ function getErrorMap() {
 
 // node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path13, errorMaps, issueData } = params;
-  const fullPath = [...path13, ...issueData.path || []];
+  const { data, path: path14, errorMaps, issueData } = params;
+  const fullPath = [...path14, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -121018,11 +121111,11 @@ var errorUtil;
 
 // node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path13, key) {
+  constructor(parent, value, path14, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path13;
+    this._path = path14;
     this._key = key;
   }
   get path() {
@@ -124976,10 +125069,10 @@ function mergeDefs(...defs) {
 function cloneDef(schema) {
   return mergeDefs(schema._zod.def);
 }
-function getElementAtPath(obj, path13) {
-  if (!path13)
+function getElementAtPath(obj, path14) {
+  if (!path14)
     return obj;
-  return path13.reduce((acc, key) => acc?.[key], obj);
+  return path14.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -125319,11 +125412,11 @@ function explicitlyAborted(x2, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path13, issues) {
+function prefixIssues(path14, issues) {
   return issues.map((iss) => {
     var _a3;
     (_a3 = iss).path ?? (_a3.path = []);
-    iss.path.unshift(path13);
+    iss.path.unshift(path14);
     return iss;
   });
 }
@@ -125773,16 +125866,16 @@ function flattenError(error62, mapper = (issue2) => issue2.message) {
 }
 function formatError(error62, mapper = (issue2) => issue2.message) {
   const fieldErrors = { _errors: [] };
-  const processError = (error63, path13 = []) => {
+  const processError = (error63, path14 = []) => {
     for (const issue2 of error63.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
-        issue2.errors.map((issues) => processError({ issues }, [...path13, ...issue2.path]));
+        issue2.errors.map((issues) => processError({ issues }, [...path14, ...issue2.path]));
       } else if (issue2.code === "invalid_key") {
-        processError({ issues: issue2.issues }, [...path13, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path14, ...issue2.path]);
       } else if (issue2.code === "invalid_element") {
-        processError({ issues: issue2.issues }, [...path13, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path14, ...issue2.path]);
       } else {
-        const fullpath = [...path13, ...issue2.path];
+        const fullpath = [...path14, ...issue2.path];
         if (fullpath.length === 0) {
           fieldErrors._errors.push(mapper(issue2));
         } else {
@@ -125821,17 +125914,17 @@ function formatError(error62, mapper = (issue2) => issue2.message) {
 }
 function treeifyError(error62, mapper = (issue2) => issue2.message) {
   const result = { errors: [] };
-  const processError = (error63, path13 = []) => {
+  const processError = (error63, path14 = []) => {
     var _a3;
     for (const issue2 of error63.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
-        issue2.errors.map((issues) => processError({ issues }, [...path13, ...issue2.path]));
+        issue2.errors.map((issues) => processError({ issues }, [...path14, ...issue2.path]));
       } else if (issue2.code === "invalid_key") {
-        processError({ issues: issue2.issues }, [...path13, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path14, ...issue2.path]);
       } else if (issue2.code === "invalid_element") {
-        processError({ issues: issue2.issues }, [...path13, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path14, ...issue2.path]);
       } else {
-        const fullpath = [...path13, ...issue2.path];
+        const fullpath = [...path14, ...issue2.path];
         if (fullpath.length === 0) {
           result.errors.push(mapper(issue2));
           continue;
@@ -125870,8 +125963,8 @@ function treeifyError(error62, mapper = (issue2) => issue2.message) {
 }
 function toDotPath(_path) {
   const segs = [];
-  const path13 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
-  for (const seg of path13) {
+  const path14 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
+  for (const seg of path14) {
     if (typeof seg === "number")
       segs.push(`[${seg}]`);
     else if (typeof seg === "symbol")
@@ -141386,11 +141479,11 @@ function normalizeObjectSchema(schema) {
   }
   return void 0;
 }
-function getDotPath(path13) {
-  if (path13.length === 0) {
+function getDotPath(path14) {
+  if (path14.length === 0) {
     return "object root";
   }
-  return path13.reduce((acc, seg, index) => {
+  return path14.reduce((acc, seg, index) => {
     if (index === 0) {
       return String(seg);
     }
@@ -143617,13 +143710,13 @@ function resolveRef(ref, ctx) {
   if (!ref.startsWith("#")) {
     throw new Error("External $ref is not supported, only local refs (#/...) are allowed");
   }
-  const path13 = ref.slice(1).split("/").filter(Boolean);
-  if (path13.length === 0) {
+  const path14 = ref.slice(1).split("/").filter(Boolean);
+  if (path14.length === 0) {
     return ctx.rootSchema;
   }
   const defsKey = ctx.version === "draft-2020-12" ? "$defs" : "definitions";
-  if (path13[0] === defsKey) {
-    const key = path13[1] === void 0 ? void 0 : decodeJSONPointerSegment(path13[1]);
+  if (path14[0] === defsKey) {
+    const key = path14[1] === void 0 ? void 0 : decodeJSONPointerSegment(path14[1]);
     if (!key || !ctx.defs[key]) {
       throw new Error(`Reference not found: ${ref}`);
     }
@@ -149814,13 +149907,13 @@ init_wallpaperType();
 init_scenePipeline();
 init_dependencyCheck();
 import fs10 from "node:fs";
-import path10 from "node:path";
+import path11 from "node:path";
 async function reapplyStored() {
   const config2 = mergedConfig();
   return applyToZCode(config2, await buildPayloadFromConfig(config2));
 }
 async function applyWallpaper(imagePath, opts) {
-  const abs = path10.resolve(imagePath);
+  const abs = path11.resolve(imagePath);
   if (!fs10.existsSync(abs))
     throw new Error(`Image not found: ${abs}`);
   const kind = detectWallpaperType(abs);
@@ -149831,7 +149924,7 @@ async function applyWallpaper(imagePath, opts) {
   const stored = loadConfig();
   const config2 = { ...baseConfig(opts, stored), mediaType: "image", sceneHash: void 0 };
   fs10.mkdirSync(dataDir(), { recursive: true });
-  const dest = path10.join(dataDir(), "wallpaper" + path10.extname(abs).toLowerCase());
+  const dest = path11.join(dataDir(), "wallpaper" + path11.extname(abs).toLowerCase());
   if (dest !== abs)
     fs10.copyFileSync(abs, dest);
   const assets = await loadWallpaper(dest);
@@ -149842,7 +149935,7 @@ async function applyWallpaper(imagePath, opts) {
 }
 function serveMediaToken() {
   try {
-    return fs10.readFileSync(path10.join(dataDir(), "serve.token"), "utf8").trim();
+    return fs10.readFileSync(path11.join(dataDir(), "serve.token"), "utf8").trim();
   } catch {
     return "";
   }
@@ -149876,7 +149969,7 @@ function baseConfig(opts, stored) {
   };
 }
 async function applySceneWallpaper(scenePath, opts = {}) {
-  const abs = path10.resolve(scenePath);
+  const abs = path11.resolve(scenePath);
   const { importScene: importScene2 } = await Promise.resolve().then(() => (init_scenePipeline(), scenePipeline_exports));
   const scene = await importScene2(abs, opts.onProgress ?? (() => void 0));
   const stored = loadConfig();
@@ -149921,7 +150014,7 @@ async function resetAppearance(port) {
 async function buildPayloadFromConfig(config2) {
   let assets;
   if (config2.mediaType === "video" && config2.wallpaperPath && fs10.existsSync(config2.wallpaperPath)) {
-    const posterPath = path10.join(path10.dirname(config2.wallpaperPath), "poster.jpg");
+    const posterPath = path11.join(path11.dirname(config2.wallpaperPath), "poster.jpg");
     if (fs10.existsSync(posterPath)) {
       assets = await loadWallpaper(posterPath);
     }
@@ -149950,16 +150043,16 @@ init_version();
 delete process.env.ZCODE_BEAUTIFY_DATA_DIR;
 delete process.env.WORKBUDDY_BEAUTIFY_DATA_DIR;
 var absoluteExisting = (p2) => {
-  if (!path12.isAbsolute(p2))
+  if (!path13.isAbsolute(p2))
     throw new Error(`\u9700\u8981\u7EDD\u5BF9\u8DEF\u5F84: ${p2}`);
   if (!existsSync3(p2))
     throw new Error(`\u8DEF\u5F84\u4E0D\u5B58\u5728: ${p2}`);
   return p2;
 };
 function cliJsPath() {
-  const serverFile = path12.resolve(process.argv[1] ?? "");
-  const cliJs = path12.join(path12.dirname(serverFile), "..", "cli.js");
-  return path12.basename(serverFile) === "server.js" && existsSync3(cliJs) ? cliJs : null;
+  const serverFile = path13.resolve(process.argv[1] ?? "");
+  const cliJs = path13.join(path13.dirname(serverFile), "..", "cli.js");
+  return path13.basename(serverFile) === "server.js" && existsSync3(cliJs) ? cliJs : null;
 }
 function bootstrapServe() {
   try {

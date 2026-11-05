@@ -8,6 +8,11 @@
  *                     , main=input[f..D-f] )
  *   total duration = D - f
  *
+ * The fade f is normally the caller's fadeSec, but shrinks adaptively for
+ * very short sources (f = D/4, 0.2s floor) and falls back to a plain
+ * re-encode when even that fade doesn't fit (hard floor D > 0.2s) — see the
+ * checks at the top of makeSeamless.
+ *
  * Seams: output(0) is exactly input(D-f) (crossfade alpha 0), which equals
  * output(D-f) (main's last frame) -> the wrap is the same frame. At t=f the
  * crossfade ends on input(f), where main picks up. Every frame of the source
@@ -62,22 +67,39 @@ export async function makeSeamless(
 
   const info = await probeVideoInfo(input, ffmpeg);
   const fullDuration = info?.duration ?? (await probeDuration(input, ffmpeg));
-  if (!Number.isFinite(fullDuration) || fullDuration <= fadeSec + 1) {
-    throw new LoopError(`Input too short for a ${fadeSec}s crossfade (duration ${fullDuration}s)`);
+  if (!Number.isFinite(fullDuration) || fullDuration <= 0.2) {
+    throw new LoopError(`Input too short to loop (duration ${fullDuration}s)`);
+  }
+  // Adaptive crossfade: the fade needs D > 2*fade (a tail AND a non-empty
+  // body). A source shorter than the requested fade can still loop with a
+  // proportionally shorter fade (fade = D/4 leaves a D/2 body; 0.2s floor).
+  // Slow-capture scene records (see recorder.ts) used to die here with
+  // "Input too short for a 1s crossfade"; tiny video wallpapers benefit too.
+  let fade = fadeSec;
+  if (fullDuration <= fade * 2 + 0.1) {
+    fade = Math.max(0.2, fullDuration / 4);
   }
   // Long inputs are truncated to a middle segment before the crossfade; the
   // whole file would balloon the cache for minutes-long sources.
   const duration = Math.min(fullDuration, options.seconds ?? fullDuration);
   const startAt = Math.min(options.startAt ?? 0, fullDuration - duration);
-  if (duration <= fadeSec + 1) {
-    throw new LoopError(`Truncated input too short for a ${fadeSec}s crossfade (duration ${duration}s)`);
+  if (duration <= fade * 2 + 0.1) {
+    if (fullDuration <= fade * 2 + 0.1) {
+      // Even the 0.2s-floor fade doesn't fit: straight re-encode keeps the
+      // import working — loop point not guaranteed seamless, still far
+      // better than failing.
+      await makeSeamlessPlain(input, output, ffmpeg, { maxWidth: options.maxWidth });
+      const plainDuration = await probeDuration(output, ffmpeg);
+      return { inputDuration: fullDuration, outputDuration: plainDuration };
+    }
+    throw new LoopError(`Truncated input too short for a ${fade}s crossfade (duration ${duration}s)`);
   }
 
   mkdirSync(path.dirname(path.resolve(output)), { recursive: true });
 
   // Peak bytes the single-pass concat queue would hold at source resolution.
   // Unknown probe data -> Infinity: fall to the two-pass build, never OOM.
-  const mainSeconds = Math.max(0, duration - 2 * fadeSec);
+  const mainSeconds = Math.max(0, duration - 2 * fade);
   const queueBytes = info
     ? info.fps * mainSeconds * info.width * info.height * 1.5
     : Infinity;
@@ -85,15 +107,15 @@ export async function makeSeamless(
     await makeSeamlessTwoPass(input, output, ffmpeg, {
       duration,
       startAt,
-      fadeSec,
+      fadeSec: fade,
       maxWidth: options.maxWidth,
     });
     const twoPassDuration = await probeDuration(output, ffmpeg);
     return { inputDuration: duration, outputDuration: twoPassDuration };
   }
 
-  const tailStart = duration - fadeSec;
-  const mainEnd = duration - fadeSec;
+  const tailStart = duration - fade;
+  const mainEnd = duration - fade;
   const scale =
     options.maxWidth && options.maxWidth > 0
       ? `scale=w='min(${options.maxWidth}\\,iw)':h=-2,`
@@ -102,10 +124,10 @@ export async function makeSeamless(
     `[0:v]split[base][src]`,
     // crossfade base: the source tail, head image fades in over it
     `[src]trim=start=${tailStart.toFixed(4)},setpts=PTS-STARTPTS[tail]`,
-    `[base]trim=end=${fadeSec.toFixed(4)},setpts=PTS-STARTPTS,format=yuva420p,fade=t=in:d=${fadeSec.toFixed(4)}:alpha=1[head]`,
+    `[base]trim=end=${fade.toFixed(4)},setpts=PTS-STARTPTS,format=yuva420p,fade=t=in:d=${fade.toFixed(4)}:alpha=1[head]`,
     `[tail][head]overlay=format=auto[xfade]`,
     // main body: the source between the crossfade end and the tail start
-    `[base]trim=start=${fadeSec.toFixed(4)}:end=${mainEnd.toFixed(4)},setpts=PTS-STARTPTS[main]`,
+    `[base]trim=start=${fade.toFixed(4)}:end=${mainEnd.toFixed(4)},setpts=PTS-STARTPTS[main]`,
     `[xfade][main]concat=n=2:v=1:a=0[joined]`,
     `[joined]${scale}format=yuv420p[out]`,
   ].join(";");
@@ -200,6 +222,29 @@ async function makeSeamlessTwoPass(
       try { rmSync(f, { force: true }); } catch { /* best effort */ }
     }
   }
+}
+
+/**
+ * Fallback for sources too short to hold even the 0.2s-floor crossfade:
+ * plain re-encode with the usual normalization, loop point NOT guaranteed
+ * seamless — keeps tiny clips importable instead of failing the whole job.
+ */
+async function makeSeamlessPlain(
+  input: string,
+  output: string,
+  ffmpeg: string,
+  spec: { maxWidth?: number },
+): Promise<void> {
+  const scale = spec.maxWidth && spec.maxWidth > 0 ? `scale=w='min(${spec.maxWidth}\\,iw)':h=-2,` : "";
+  await exec(ffmpeg, [
+    "-y", "-hide_banner", "-loglevel", "warning",
+    "-i", input,
+    "-vf", `${scale}format=yuv420p`,
+    "-c:v", "libx264", "-crf", "18", "-preset", "veryfast", "-pix_fmt", "yuv420p",
+    "-movflags", "+faststart",
+    "-an",
+    output,
+  ], { timeout: 600_000, maxBuffer: 16 * 1024 * 1024 });
 }
 
 /** width/height/fps/duration via one ffprobe call; null when probing fails. */
