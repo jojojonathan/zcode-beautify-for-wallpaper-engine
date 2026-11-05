@@ -20,9 +20,17 @@
  *
  * Audio is stripped (WE scenes may carry audio; a wallpaper must be silent)
  * and +faststart is applied for immediate playback when served over HTTP.
+ *
+ * Memory: the single-pass graph above parks the WHOLE main body in concat's
+ * second-input queue (its first input only starts at D-f, so every [f..D-f]
+ * frame decodes and buffers at SOURCE resolution before the first output
+ * frame). A 60s 4K@72fps source needs ~50GB there — ENOMEM on any desktop.
+ * Big inputs therefore stream through a two-pass build with identical output
+ * layout (crossfade segment, then the body, concat-copied together); each
+ * pass holds only a handful of frames regardless of resolution.
  */
 
-import { mkdirSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { checkFfmpeg } from "./dependencyCheck.js";
 import { execFileP } from "./exec.js";
@@ -30,6 +38,9 @@ import { execFileP } from "./exec.js";
 const exec = execFileP;
 
 export class LoopError extends Error {}
+
+/** Queued-frame budget the single-pass graph may hold (see header note). */
+const SINGLE_PASS_BUDGET = 2 * 1024 ** 3;
 
 export interface SeamlessOptions {
   /** Cut the source from startAt for `seconds` before looping (long inputs). */
@@ -49,7 +60,8 @@ export async function makeSeamless(
   const ffmpeg = ffmpegPath ?? (await checkFfmpeg()).path;
   if (!ffmpeg) throw new LoopError("ffmpeg not found — cannot process loop");
 
-  const fullDuration = await probeDuration(input, ffmpeg);
+  const info = await probeVideoInfo(input, ffmpeg);
+  const fullDuration = info?.duration ?? (await probeDuration(input, ffmpeg));
   if (!Number.isFinite(fullDuration) || fullDuration <= fadeSec + 1) {
     throw new LoopError(`Input too short for a ${fadeSec}s crossfade (duration ${fullDuration}s)`);
   }
@@ -59,6 +71,25 @@ export async function makeSeamless(
   const startAt = Math.min(options.startAt ?? 0, fullDuration - duration);
   if (duration <= fadeSec + 1) {
     throw new LoopError(`Truncated input too short for a ${fadeSec}s crossfade (duration ${duration}s)`);
+  }
+
+  mkdirSync(path.dirname(path.resolve(output)), { recursive: true });
+
+  // Peak bytes the single-pass concat queue would hold at source resolution.
+  // Unknown probe data -> Infinity: fall to the two-pass build, never OOM.
+  const mainSeconds = Math.max(0, duration - 2 * fadeSec);
+  const queueBytes = info
+    ? info.fps * mainSeconds * info.width * info.height * 1.5
+    : Infinity;
+  if (queueBytes > SINGLE_PASS_BUDGET) {
+    await makeSeamlessTwoPass(input, output, ffmpeg, {
+      duration,
+      startAt,
+      fadeSec,
+      maxWidth: options.maxWidth,
+    });
+    const twoPassDuration = await probeDuration(output, ffmpeg);
+    return { inputDuration: duration, outputDuration: twoPassDuration };
   }
 
   const tailStart = duration - fadeSec;
@@ -79,7 +110,6 @@ export async function makeSeamless(
     `[joined]${scale}format=yuv420p[out]`,
   ].join(";");
 
-  mkdirSync(path.dirname(path.resolve(output)), { recursive: true });
   await exec(ffmpeg, [
     "-y", "-hide_banner", "-loglevel", "warning",
     // -ss/-t BEFORE -i: they must limit what the FILTERS see (an output-side
@@ -100,6 +130,104 @@ export async function makeSeamless(
 
   const outputDuration = await probeDuration(output, ffmpeg);
   return { inputDuration: duration, outputDuration };
+}
+
+/**
+ * Two-pass build for sources too big for the single-pass graph: identical
+ * output layout (crossfade segment + main body, concat'd), but each pass
+ * streams frame-by-frame, so memory stays flat regardless of resolution.
+ * Pass 1 renders only the fadeSec-long crossfade (source tail + fading head
+ * via input-side -ss/-t, no trim queues); pass 2 re-encodes the body [f..D-f]
+ * as a plain stream; pass 3 stream-copies both segments together.
+ */
+async function makeSeamlessTwoPass(
+  input: string,
+  output: string,
+  ffmpeg: string,
+  spec: { duration: number; startAt: number; fadeSec: number; maxWidth?: number },
+): Promise<void> {
+  const { duration, startAt, fadeSec, maxWidth } = spec;
+  const tailStart = duration - fadeSec;
+  const bodyDur = duration - 2 * fadeSec;
+  const scale = maxWidth && maxWidth > 0 ? `scale=w='min(${maxWidth}\\,iw)':h=-2,` : "";
+  const enc = ["-c:v", "libx264", "-crf", "18", "-preset", "veryfast", "-pix_fmt", "yuv420p", "-an"];
+  // Input-side seek+limit: -ss only when nonzero, -t always (matches what the
+  // single-pass trims would have seen).
+  const seek = (t: number, secs: number) => [
+    ...(t > 0 ? ["-ss", t.toFixed(4)] : []),
+    "-t", secs.toFixed(4),
+  ];
+
+  const seg1 = `${output}.seg1.mp4`;
+  const seg2 = `${output}.seg2.mp4`;
+  const list = `${output}.concat.txt`;
+  try {
+    await exec(ffmpeg, [
+      "-y", "-hide_banner", "-loglevel", "warning",
+      ...seek(startAt + tailStart, fadeSec), "-i", input,
+      ...seek(startAt, fadeSec), "-i", input,
+      "-filter_complex", [
+        `[1:v]format=yuva420p,fade=t=in:d=${fadeSec.toFixed(4)}:alpha=1[head]`,
+        `[0:v][head]overlay=format=auto[xf]`,
+        `[xf]${scale}format=yuv420p[out]`,
+      ].join(";"),
+      "-map", "[out]",
+      ...enc,
+      seg1,
+    ], { timeout: 600_000, maxBuffer: 16 * 1024 * 1024 });
+
+    if (bodyDur >= 0.1) {
+      await exec(ffmpeg, [
+        "-y", "-hide_banner", "-loglevel", "warning",
+        ...seek(startAt + fadeSec, bodyDur), "-i", input,
+        "-vf", `${scale}format=yuv420p`,
+        ...enc,
+        seg2,
+      ], { timeout: 600_000, maxBuffer: 16 * 1024 * 1024 });
+    }
+
+    const esc = (p: string) => `'${p.replaceAll("'", "'\\''")}'`;
+    const files = bodyDur >= 0.1 ? [seg1, seg2] : [seg1];
+    writeFileSync(list, files.map((f) => `file ${esc(f)}\n`).join(""));
+    await exec(ffmpeg, [
+      "-y", "-hide_banner", "-loglevel", "warning",
+      "-f", "concat", "-safe", "0", "-i", list,
+      "-c", "copy", "-movflags", "+faststart",
+      output,
+    ], { timeout: 120_000, maxBuffer: 16 * 1024 * 1024 });
+  } finally {
+    for (const f of [seg1, seg2, list]) {
+      try { rmSync(f, { force: true }); } catch { /* best effort */ }
+    }
+  }
+}
+
+/** width/height/fps/duration via one ffprobe call; null when probing fails. */
+async function probeVideoInfo(
+  file: string,
+  ffmpegPath: string,
+): Promise<{ width: number; height: number; fps: number; duration: number } | null> {
+  const ffprobe = ffmpegPath.replace(/ffmpeg(\.exe)?$/i, "ffprobe$1");
+  try {
+    const { stdout } = await exec(ffprobe, [
+      "-v", "error", "-select_streams", "v:0",
+      "-show_entries", "stream=width,height,r_frame_rate:format=duration",
+      "-of", "json", file,
+    ], { timeout: 30_000 });
+    const parsed = JSON.parse(stdout) as {
+      streams?: Array<{ width?: number; height?: number; r_frame_rate?: string }>;
+      format?: { duration?: string };
+    };
+    const s = parsed.streams?.[0];
+    const duration = Number(parsed.format?.duration);
+    if (!s?.width || !s.height || !s.r_frame_rate || !Number.isFinite(duration)) return null;
+    const [n, d] = s.r_frame_rate.split("/").map(Number);
+    const fps = d ? n / d : NaN;
+    if (!Number.isFinite(fps) || fps <= 0) return null;
+    return { width: s.width, height: s.height, fps, duration };
+  } catch {
+    return null;
+  }
 }
 
 /** First-frame vs last-frame SSIM: ~1.0 proves the loop wraps on the same frame. */

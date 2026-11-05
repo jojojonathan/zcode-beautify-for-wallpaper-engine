@@ -118539,7 +118539,7 @@ var VERSION;
 var init_version = __esm({
   "dist/version.js"() {
     "use strict";
-    VERSION = "0.6.0";
+    VERSION = "0.6.1";
   }
 });
 
@@ -119591,13 +119591,14 @@ var init_recorder = __esm({
 });
 
 // dist/core/loopProcessor.js
-import { mkdirSync as mkdirSync2 } from "node:fs";
+import { mkdirSync as mkdirSync2, rmSync as rmSync2, writeFileSync } from "node:fs";
 import path7 from "node:path";
 async function makeSeamless(input2, output2, fadeSec, ffmpegPath, options = {}) {
   const ffmpeg = ffmpegPath ?? (await checkFfmpeg()).path;
   if (!ffmpeg)
     throw new LoopError("ffmpeg not found \u2014 cannot process loop");
-  const fullDuration = await probeDuration(input2, ffmpeg);
+  const info = await probeVideoInfo(input2, ffmpeg);
+  const fullDuration = info?.duration ?? await probeDuration(input2, ffmpeg);
   if (!Number.isFinite(fullDuration) || fullDuration <= fadeSec + 1) {
     throw new LoopError(`Input too short for a ${fadeSec}s crossfade (duration ${fullDuration}s)`);
   }
@@ -119605,6 +119606,19 @@ async function makeSeamless(input2, output2, fadeSec, ffmpegPath, options = {}) 
   const startAt = Math.min(options.startAt ?? 0, fullDuration - duration3);
   if (duration3 <= fadeSec + 1) {
     throw new LoopError(`Truncated input too short for a ${fadeSec}s crossfade (duration ${duration3}s)`);
+  }
+  mkdirSync2(path7.dirname(path7.resolve(output2)), { recursive: true });
+  const mainSeconds = Math.max(0, duration3 - 2 * fadeSec);
+  const queueBytes = info ? info.fps * mainSeconds * info.width * info.height * 1.5 : Infinity;
+  if (queueBytes > SINGLE_PASS_BUDGET) {
+    await makeSeamlessTwoPass(input2, output2, ffmpeg, {
+      duration: duration3,
+      startAt,
+      fadeSec,
+      maxWidth: options.maxWidth
+    });
+    const twoPassDuration = await probeDuration(output2, ffmpeg);
+    return { inputDuration: duration3, outputDuration: twoPassDuration };
   }
   const tailStart = duration3 - fadeSec;
   const mainEnd = duration3 - fadeSec;
@@ -119620,7 +119634,6 @@ async function makeSeamless(input2, output2, fadeSec, ffmpegPath, options = {}) 
     `[xfade][main]concat=n=2:v=1:a=0[joined]`,
     `[joined]${scale}format=yuv420p[out]`
   ].join(";");
-  mkdirSync2(path7.dirname(path7.resolve(output2)), { recursive: true });
   await exec4(ffmpeg, [
     "-y",
     "-hide_banner",
@@ -119652,6 +119665,116 @@ async function makeSeamless(input2, output2, fadeSec, ffmpegPath, options = {}) 
   const outputDuration = await probeDuration(output2, ffmpeg);
   return { inputDuration: duration3, outputDuration };
 }
+async function makeSeamlessTwoPass(input2, output2, ffmpeg, spec) {
+  const { duration: duration3, startAt, fadeSec, maxWidth } = spec;
+  const tailStart = duration3 - fadeSec;
+  const bodyDur = duration3 - 2 * fadeSec;
+  const scale = maxWidth && maxWidth > 0 ? `scale=w='min(${maxWidth}\\,iw)':h=-2,` : "";
+  const enc = ["-c:v", "libx264", "-crf", "18", "-preset", "veryfast", "-pix_fmt", "yuv420p", "-an"];
+  const seek = (t2, secs) => [
+    ...t2 > 0 ? ["-ss", t2.toFixed(4)] : [],
+    "-t",
+    secs.toFixed(4)
+  ];
+  const seg1 = `${output2}.seg1.mp4`;
+  const seg2 = `${output2}.seg2.mp4`;
+  const list = `${output2}.concat.txt`;
+  try {
+    await exec4(ffmpeg, [
+      "-y",
+      "-hide_banner",
+      "-loglevel",
+      "warning",
+      ...seek(startAt + tailStart, fadeSec),
+      "-i",
+      input2,
+      ...seek(startAt, fadeSec),
+      "-i",
+      input2,
+      "-filter_complex",
+      [
+        `[1:v]format=yuva420p,fade=t=in:d=${fadeSec.toFixed(4)}:alpha=1[head]`,
+        `[0:v][head]overlay=format=auto[xf]`,
+        `[xf]${scale}format=yuv420p[out]`
+      ].join(";"),
+      "-map",
+      "[out]",
+      ...enc,
+      seg1
+    ], { timeout: 6e5, maxBuffer: 16 * 1024 * 1024 });
+    if (bodyDur >= 0.1) {
+      await exec4(ffmpeg, [
+        "-y",
+        "-hide_banner",
+        "-loglevel",
+        "warning",
+        ...seek(startAt + fadeSec, bodyDur),
+        "-i",
+        input2,
+        "-vf",
+        `${scale}format=yuv420p`,
+        ...enc,
+        seg2
+      ], { timeout: 6e5, maxBuffer: 16 * 1024 * 1024 });
+    }
+    const esc2 = (p2) => `'${p2.replaceAll("'", "'\\''")}'`;
+    const files = bodyDur >= 0.1 ? [seg1, seg2] : [seg1];
+    writeFileSync(list, files.map((f2) => `file ${esc2(f2)}
+`).join(""));
+    await exec4(ffmpeg, [
+      "-y",
+      "-hide_banner",
+      "-loglevel",
+      "warning",
+      "-f",
+      "concat",
+      "-safe",
+      "0",
+      "-i",
+      list,
+      "-c",
+      "copy",
+      "-movflags",
+      "+faststart",
+      output2
+    ], { timeout: 12e4, maxBuffer: 16 * 1024 * 1024 });
+  } finally {
+    for (const f2 of [seg1, seg2, list]) {
+      try {
+        rmSync2(f2, { force: true });
+      } catch {
+      }
+    }
+  }
+}
+async function probeVideoInfo(file2, ffmpegPath) {
+  const ffprobe = ffmpegPath.replace(/ffmpeg(\.exe)?$/i, "ffprobe$1");
+  try {
+    const { stdout } = await exec4(ffprobe, [
+      "-v",
+      "error",
+      "-select_streams",
+      "v:0",
+      "-show_entries",
+      "stream=width,height,r_frame_rate:format=duration",
+      "-of",
+      "json",
+      file2
+    ], { timeout: 3e4 });
+    const parsed = JSON.parse(stdout);
+    const s2 = parsed.streams?.[0];
+    const duration3 = Number(parsed.format?.duration);
+    if (!s2?.width || !s2.height || !s2.r_frame_rate || !Number.isFinite(duration3))
+      return null;
+    const [n2, d] = s2.r_frame_rate.split("/").map(Number);
+    const fps = d ? n2 / d : NaN;
+    if (!Number.isFinite(fps) || fps <= 0)
+      return null;
+    return { width: s2.width, height: s2.height, fps, duration: duration3 };
+  } catch {
+    return null;
+  }
+}
 async function probeDuration(file2, ffmpegPath) {
   const ffprobe = ffmpegPath.replace(/ffmpeg(\.exe)?$/i, "ffprobe$1");
   try {
@@ -119663,7 +119786,7 @@ async function probeDuration(file2, ffmpegPath) {
     return m ? Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]) : Number.NaN;
   }
 }
-var exec4, LoopError;
+var exec4, LoopError, SINGLE_PASS_BUDGET;
 var init_loopProcessor = __esm({
   "dist/core/loopProcessor.js"() {
     "use strict";
@@ -119672,6 +119795,7 @@ var init_loopProcessor = __esm({
     exec4 = execFileP;
     LoopError = class extends Error {
     };
+    SINGLE_PASS_BUDGET = 2 * 1024 ** 3;
   }
 });
 
