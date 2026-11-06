@@ -118539,7 +118539,7 @@ var VERSION;
 var init_version = __esm({
   "dist/version.js"() {
     "use strict";
-    VERSION = "0.6.3";
+    VERSION = "0.6.4";
   }
 });
 

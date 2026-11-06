@@ -111431,7 +111431,7 @@ var VERSION, REPO_URL, FORK_URL, AUTHOR, LICENSE;
 var init_version = __esm({
   "dist/version.js"() {
     "use strict";
-    VERSION = "0.6.3";
+    VERSION = "0.6.4";
     REPO_URL = "https://github.com/Logocceai/zcode-beautify";
     FORK_URL = "https://github.com/Mc-GrowlR/zcode-beautify-for-wallpaper-engine";
     AUTHOR = "Mc-GrowlR";
@@ -115741,6 +115741,10 @@ function buildPanelScript(apiPort, apiToken = "", startupClean = true, opts = {}
     'cache-hit': '\u7F13\u5B58\u547D\u4E2D', done: '\u5B8C\u6210', error: '\u5931\u8D25'
   };
   var importTimer = null;
+  // Last path handed to \u5BFC\u5165; the input is cleared right after a click (so
+  // re-clicking cannot re-import the same thing) and this restores it for
+  // the failure guide's \u91CD\u8BD5 button.
+  var lastImportPath = '';
   // Batch progress ("\u7B2C i/N \u4E2A") shown alongside the per-import stage while a
   // multi-file queue runs; null for single imports.
   var batchInfo = null;
@@ -116215,6 +116219,8 @@ function buildPanelScript(apiPort, apiToken = "", startupClean = true, opts = {}
   $('zb-import').addEventListener('click', function () {
     var p = $('zb-scene-path').value.trim();
     if (!p) { status('\u8BF7\u5148\u7C98\u8D34\u573A\u666F\u58C1\u7EB8\u8DEF\u5F84'); return; }
+    lastImportPath = p;
+    $('zb-scene-path').value = ''; // clear immediately: re-clicking won't re-import
     showGuide('', false);
     post('/api/import-scene', { path: p, importRes: zbResSel ? resPayload() : undefined }, function (d) {
       if (d && d.error) { status(d.error); return; }
@@ -116245,6 +116251,9 @@ function buildPanelScript(apiPort, apiToken = "", startupClean = true, opts = {}
   }
   $('zb-guide-retry').addEventListener('click', function () {
     showGuide('', false);
+    // The input was cleared on the original click; restore the path so the
+    // retry has something to import.
+    $('zb-scene-path').value = lastImportPath;
     $('zb-import').click();
   });
 

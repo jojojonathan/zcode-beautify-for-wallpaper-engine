@@ -1998,6 +1998,10 @@ export function buildPanelScript(
     'cache-hit': '缓存命中', done: '完成', error: '失败'
   };
   var importTimer = null;
+  // Last path handed to 导入; the input is cleared right after a click (so
+  // re-clicking cannot re-import the same thing) and this restores it for
+  // the failure guide's 重试 button.
+  var lastImportPath = '';
   // Batch progress ("第 i/N 个") shown alongside the per-import stage while a
   // multi-file queue runs; null for single imports.
   var batchInfo = null;
@@ -2472,6 +2476,8 @@ export function buildPanelScript(
   $('zb-import').addEventListener('click', function () {
     var p = $('zb-scene-path').value.trim();
     if (!p) { status('请先粘贴场景壁纸路径'); return; }
+    lastImportPath = p;
+    $('zb-scene-path').value = ''; // clear immediately: re-clicking won't re-import
     showGuide('', false);
     post('/api/import-scene', { path: p, importRes: zbResSel ? resPayload() : undefined }, function (d) {
       if (d && d.error) { status(d.error); return; }
@@ -2502,6 +2508,9 @@ export function buildPanelScript(
   }
   $('zb-guide-retry').addEventListener('click', function () {
     showGuide('', false);
+    // The input was cleared on the original click; restore the path so the
+    // retry has something to import.
+    $('zb-scene-path').value = lastImportPath;
     $('zb-import').click();
   });
 
