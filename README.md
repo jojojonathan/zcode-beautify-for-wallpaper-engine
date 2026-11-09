@@ -4,7 +4,7 @@
 
 Beautify the **ZCode desktop client**: use any image — or any **video / Wallpaper Engine scene wallpaper** — as a background wallpaper and adapt the whole UI with Material Design 3 (Monet) dynamic color; restyle the chat area (message bubbles, conversation-column width, a large-session smooth mode) — plus a live settings panel for real-time tuning.
 
-> 🧩 **Since 0.5.0 the same plugin also targets the WorkBuddy desktop client.** Pass `--target workbuddy` (or install it through the bundled `.codebuddy-plugin` manifest, which sets `BEAUTIFY_TARGET=workbuddy`): the wallpaper layer and Monet palette are re-mapped onto WorkBuddy's `--wb-*` design tokens. Ports (9222/9333 CDP, 9223/9334 API), data dirs and launcher entries are isolated per client, so both can run at once. Chat-area extras stay ZCode-only — they bind to ZCode's DOM, and the panel hides those tabs automatically under WorkBuddy.
+> 🧩 **Since 0.5.0 the same plugin also targets the WorkBuddy desktop client.** Pass `--target workbuddy` (or install it through the bundled `.codebuddy-plugin` manifest, which sets `BEAUTIFY_TARGET=workbuddy`): the wallpaper layer and Monet palette are re-mapped onto WorkBuddy's `--wb-*` design tokens. Ports (9223/9333 CDP, 9224/9334 API), data dirs and launcher entries are isolated per client, so both can run at once. Chat-area extras stay ZCode-only — they bind to ZCode's DOM, and the panel hides those tabs automatically under WorkBuddy.
 
 > 📷 Screenshot welcome — PRs adding one to `docs/screenshot.png` are appreciated.
 
@@ -37,7 +37,7 @@ Beautify the **ZCode desktop client**: use any image — or any **video / Wallpa
 
 ZCode is an Electron app whose UI theming is driven by Tailwind v4 `--color-*` CSS custom properties, and production builds start **without** a debug port. This plugin:
 
-1. starts ZCode with `--remote-debugging-port=9222` (one-time `launch`; launch entries are then kept fixed automatically);
+1. starts ZCode with `--remote-debugging-port=9223` (one-time `launch`; launch entries are then kept fixed automatically);
 2. connects over the Chrome DevTools Protocol and injects CSS/JS into the renderer:
    - a fixed-position wallpaper layer (images embedded as data URI, video loops streamed over localhost HTTP),
    - translucent background variables so the wallpaper shows through,
@@ -124,11 +124,11 @@ You can also just type `/beautify <image path>` in ZCode and let the agent do it
 | `--target zcode\|workbuddy\|auto` | Global flag: pick the client to beautify (default `zcode`, `auto` detects the installed one); same as the `BEAUTIFY_TARGET` env var |
 | `enable` | Opt in to the experimental CDP injection: records consent, adds the CDP flag to the launch entries, starts the local service |
 | `disable [--keep-launchers]` | Opt out and roll back: clears the injected theme (incl. the renderer's cached copy), stops the service, strips the flag from the launch entries (`--keep-launchers` keeps it) |
-| `launch [--port N]` | Start the client with `--remote-debugging-port` (quit it first); 9222 for ZCode, 9333 for WorkBuddy |
+| `launch [--port N]` | Start the client with `--remote-debugging-port` (quit it first); 9223 for ZCode, 9333 for WorkBuddy |
 | `apply <image> [--blur] [--dim] [--fit] [--no-monet]` | Set wallpaper + adapt colors (`--fit cover\|contain\|smart`) |
 | `apply-scene <pkg-or-dir>` | Import a Wallpaper Engine scene / video wallpaper end-to-end |
 | `colors` | Re-apply the stored theme without changing the image |
-| `serve [--detach] [--api-port M]` | Watch mode + settings panel + local control API (default API port 9223); `--detach` survives the shell that started it |
+| `serve [--detach] [--api-port M]` | Watch mode + settings panel + local control API (default API port 9224); `--detach` survives the shell that started it |
 | `watch` | Headless watch mode: re-inject whenever ZCode restarts |
 | `repair-launchers [--dry-run] [--remove]` | Scan/fix every launch entry so ZCode always starts with the CDP port; `--remove` strips the flag from every entry instead (the rollback) |
 | `reset` | Remove wallpaper and color overrides |
@@ -215,7 +215,7 @@ The injection mechanism is **experimental** and **off by default** (since 0.6.0)
 
 **What opting in does** (`enable_experimental`, or `zcode-beautify enable`):
 
-- Adds `--remote-debugging-port=9222` to the client's launch entries (your desktop / Start Menu / pinned-taskbar shortcuts, the `zcode://` handler, Explorer context-menu verbs) so ZCode opens a local CDP port. Machine-wide entries that need administrator rights are reported, never modified.
+- Adds `--remote-debugging-port=9223` to the client's launch entries (your desktop / Start Menu / pinned-taskbar shortcuts, the `zcode://` handler, Explorer context-menu verbs) so ZCode opens a local CDP port. Machine-wide entries that need administrator rights are reported, never modified.
 - Starts the local service and re-enables the self-heal that keeps those entries carrying the flag across client updates.
 - Records consent (timestamp + plugin version) in the plugin's config. Installations that predate 0.6.0 keep working once, marked as migrated; the panel shows the state with a one-click opt-out.
 
@@ -231,7 +231,7 @@ The injection mechanism is **experimental** and **off by default** (since 0.6.0)
 ## Risks & limitations
 
 - Injection happens over CDP — an **unofficial** mechanism, **experimental and opt-in** (see the section above). Updates to ZCode may break it; `reset` always restores the default look.
-- `launch` restarts ZCode once. Without `serve`/`watch` running, the theme is lost on every ZCode restart (CDP sessions are scoped to the connection). No manual edits needed: while the experimental mode is enabled, the MCP server keeps every ZCode launch entry (shortcuts, protocol handler, context-menu verbs) carrying ` --remote-debugging-port=9222` automatically, so the theme survives every restart as long as `serve` runs. Start it with `serve --detach`: a foreground `serve` dies with the terminal (or agent session) that spawned it, and the panel then reports itself offline.
+- `launch` restarts ZCode once. Without `serve`/`watch` running, the theme is lost on every ZCode restart (CDP sessions are scoped to the connection). No manual edits needed: while the experimental mode is enabled, the MCP server keeps every ZCode launch entry (shortcuts, protocol handler, context-menu verbs) carrying ` --remote-debugging-port=9223` automatically, so the theme survives every restart as long as `serve` runs. Start it with `serve --detach`: a foreground `serve` dies with the terminal (or agent session) that spawned it, and the panel then reports itself offline.
 - Chat restyling hooks (`[data-v4-user-input-bubble]`, `conversation:max-w-*` container queries) are tied to ZCode's current DOM; a ZCode redesign may need selector updates.
 - The control API binds to `127.0.0.1` only and authenticates with a per-launch random token; media URLs carry the token as a query parameter. The CDP port itself is unauthenticated — see the opt-in section above.
 - Dynamic import (scene capture) is Windows-only (Desktop Duplication API); everything else is cross-platform.

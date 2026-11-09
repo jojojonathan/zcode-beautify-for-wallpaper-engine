@@ -250,8 +250,8 @@ var init_target = __esm({
       exeEnvVars: ["ZCODE_WINDOWS_APP_INSTALL_DIR"],
       tokens: "color",
       dataDirEnvVars: ["ZCODE_BEAUTIFY_DATA_DIR"],
-      cdpPort: 9222,
-      apiPort: 9223,
+      cdpPort: 9223,
+      apiPort: 9224,
       defaultDataDir: () => path.join(os.homedir(), ".zcode", "cli", "plugins", "data", "zcode-beautify"),
       rendererUrlIncludes: ["out/renderer/index.html"],
       rendererTitles: ["ZCode"],
@@ -111431,7 +111431,7 @@ var VERSION, REPO_URL, FORK_URL, AUTHOR, LICENSE;
 var init_version = __esm({
   "dist/version.js"() {
     "use strict";
-    VERSION = "0.6.4";
+    VERSION = "0.6.5";
     REPO_URL = "https://github.com/Logocceai/zcode-beautify";
     FORK_URL = "https://github.com/Mc-GrowlR/zcode-beautify-for-wallpaper-engine";
     AUTHOR = "Mc-GrowlR";
@@ -111473,7 +111473,7 @@ function configFile() {
 }
 function loadConfig() {
   try {
-    return JSON.parse(fs4.readFileSync(configFile(), "utf8"));
+    return migrateLegacyPorts(JSON.parse(fs4.readFileSync(configFile(), "utf8")));
   } catch (err) {
     if (err.code !== "ENOENT") {
       try {
@@ -111483,6 +111483,16 @@ function loadConfig() {
     }
     return {};
   }
+}
+function migrateLegacyPorts(cfg) {
+  if (cfg.port === 9222)
+    cfg.port = 9223;
+  if (cfg.apiPort === 9223)
+    cfg.apiPort = 9224;
+  if (typeof cfg.sceneVideoUrl === "string") {
+    cfg.sceneVideoUrl = cfg.sceneVideoUrl.replace("//127.0.0.1:9223/", "//127.0.0.1:9224/");
+  }
+  return cfg;
 }
 function withConfigLock(fn) {
   const lock = configFile() + ".lock";
@@ -111929,7 +111939,7 @@ var init_inject = __esm({
     };
     BUBBLE_PRESETS = ["default", "accent", "glass", "outline", "flat", "custom"];
     DEFAULT_CONFIG = {
-      port: 9222,
+      port: 9223,
       experimental: { enabled: false },
       blur: 0,
       dim: 25,
@@ -113517,7 +113527,7 @@ function Add-Result($kind, $p, $before, $after, $status, $reason) {
 }
 
 # Strip any --remote-debugging-port=<digits> (any port, not just $port) and
-# the whitespace before it, so "app.exe --remote-debugging-port=9222" becomes
+# the whitespace before it, so "app.exe --remote-debugging-port=9223" becomes
 # "app.exe" and quoted command strings stay intact.
 function Remove-Flag([string]$s) {
   return ($s -replace '\\s*--remote-debugging-port=\\d+', '').Trim()
@@ -113552,10 +113562,16 @@ foreach ($item in $lnks) {
   $before = [string]$sc.Arguments
   if ($mode -eq 'add') {
     if ($before -match 'remote-debugging-port') {
-      Add-Result 'shortcut' $item.FullName $before $before 'already-ok' $null
-      continue
+      if ($before -match ('--remote-debugging-port=' + $port + '\\b')) {
+        Add-Result 'shortcut' $item.FullName $before $before 'already-ok' $null
+        continue
+      }
+      # Stale port (e.g. the pre-0.6.5 default 9222): swap it for the
+      # requested one instead of skipping the entry.
+      $after = (Remove-Flag $before).Trim() + $flag
+    } else {
+      $after = ($before.Trim() + $flag).Trim()
     }
-    $after = ($before.Trim() + $flag).Trim()
   } else {
     if ($before -notmatch 'remote-debugging-port') {
       Add-Result 'shortcut' $item.FullName $before $before 'already-ok' $null
@@ -113587,12 +113603,17 @@ foreach ($k in $keys) {
     if ($before -notmatch [regex]::Escape($exeName)) { continue }
     if ($mode -eq 'add') {
       if ($before -match 'remote-debugging-port') {
-        Add-Result 'registry' $k $before $before 'already-ok' $null
-        continue
+        if ($before -match ('--remote-debugging-port=' + $port + '\\b')) {
+          Add-Result 'registry' $k $before $before 'already-ok' $null
+          continue
+        }
+        # Stale port: strip it, then re-insert the requested one after the exe.
+        $after = (Remove-Flag $before).Trim() -replace '^(\\s*("[^"]+"|\\S+))', ('$1' + $flag)
+      } else {
+        # Insert the flag directly after the executable token, keeping any
+        # placeholders ("%1") and quoting untouched.
+        $after = $before -replace '^(\\s*("[^"]+"|\\S+))', ('$1' + $flag)
       }
-      # Insert the flag directly after the executable token, keeping any
-      # placeholders ("%1") and quoting untouched.
-      $after = $before -replace '^(\\s*("[^"]+"|\\S+))', ('$1' + $flag)
     } else {
       if ($before -notmatch 'remote-debugging-port') {
         Add-Result 'registry' $k $before $before 'already-ok' $null
@@ -119718,7 +119739,7 @@ Commands:
     --sidebar-dim <0-100>        Extra-darken the left sidebar (default 0)
     --fit <mode>                 cover | contain | smart (default cover)
     --no-monet                   Keep the client's original colors
-    --port <N>                   CDP port (default 9222)
+    --port <N>                   CDP port (default 9223)
   apply-scene <pkg-or-dir> [options]
                                  Import a Wallpaper Engine scene wallpaper,
                                  render it to a seamless loop and apply it.
@@ -119731,11 +119752,12 @@ Commands:
   status [--port N]              Show CDP reachability and renderer targets
   watch [--port N]               Watch mode: re-inject whenever the app (re)starts
   serve [--port N] [--api-port M] [--detach]
-                                 Watch mode + settings panel + local API (default API port 9223)
+                                 Watch mode + settings panel + local API (default API port 9224)
                                  --detach runs it in the background, outliving this shell
   repair-launchers [--port N] [--dry-run] [--remove]
                                  Add --remote-debugging-port to the app's launch
-                                 entries (shortcuts, deep-link handler) missing it;
+                                 entries (shortcuts, deep-link handler) missing it
+                                 or carrying a stale port;
                                  --remove strips the flag from every entry instead
 `;
 async function main() {

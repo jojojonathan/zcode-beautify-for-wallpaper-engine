@@ -15,7 +15,7 @@ Two clients are supported since 0.5.0:
 
 | Client | Selection | CDP / API port | Token family |
 |---|---|---|---|
-| ZCode (default) | nothing to add | 9222 / 9223 | `--color-*` |
+| ZCode (default) | nothing to add | 9223 / 9224 | `--color-*` |
 | WorkBuddy | `--target workbuddy` or `BEAUTIFY_TARGET=workbuddy` | 9333 / 9334 | `--wb-*` |
 
 When this plugin is installed through `.codebuddy-plugin/` (WorkBuddy), the
@@ -109,7 +109,7 @@ ZCode-only; under WorkBuddy the MCP/panel accept the parameters but skip them.
 - The experimental CDP injection is **off by default** (0.6.0+): `set_background`
   / `apply_options` / `refresh_theme` return guidance until `enable_experimental`
   is called once (with the user's consent — see the README security notes).
-- ZCode must be running (or startable) with `--remote-debugging-port=9222`.
+- ZCode must be running (or startable) with `--remote-debugging-port=9223`.
 - Themes live in CDP sessions: they are wiped when ZCode restarts. Watch mode
   makes re-injection automatic.
 - Functional colors (success/warning/destructive) are intentionally preserved.

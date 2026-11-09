@@ -9,7 +9,7 @@ function check(label: string, cond: boolean, extra = "") {
   console.log(`${cond ? "ok  " : "FAIL"} ${label}${extra ? ` (${extra})` : ""}`);
 }
 
-const ws = await connect(pickRenderer(await listTargets(9222)).webSocketDebuggerUrl);
+const ws = await connect(pickRenderer(await listTargets(9223)).webSocketDebuggerUrl);
 
 async function bubbleState() {
   return evaluate(ws, `(() => {

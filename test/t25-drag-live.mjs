@@ -24,15 +24,15 @@ const TOKEN = fs.readFileSync(
   "utf8"
 ).trim();
 const api = (method, body) =>
-  fetch("http://127.0.0.1:9223/api/config", {
+  fetch("http://127.0.0.1:9224/api/config", {
     method,
     headers: { "Content-Type": "application/json", "X-Beautify-Token": TOKEN },
     body: body ? JSON.stringify(body) : undefined,
   }).then((r) => r.json());
 
-const list = await (await fetch("http://127.0.0.1:9222/json/list")).json();
+const list = await (await fetch("http://127.0.0.1:9223/json/list")).json();
 const page = list.find((t) => t.type === "page" && t.title === "ZCode");
-if (!page) { console.log("FAIL no ZCode page target (start ZCode with --remote-debugging-port=9222)"); process.exit(1); }
+if (!page) { console.log("FAIL no ZCode page target (start ZCode with --remote-debugging-port=9223)"); process.exit(1); }
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 let id = 1;
 const pend = new Map();

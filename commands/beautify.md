@@ -37,7 +37,7 @@ The user wants to beautify their desktop client — **ZCode** by default, or
 6. **If a tool fails with a CDP/port error**, the running ZCode instance was
    not started with the debug port. Tell the user to run:
    `node <plugin-root>/dist/cli.js launch`
-   (this restarts ZCode with `--remote-debugging-port=9222` — unsaved work in
+   (this restarts ZCode with `--remote-debugging-port=9223` — unsaved work in
    other apps is not affected, ZCode sessions are persisted), then retry.
 7. **Fine-tune without changing the wallpaper** using the `apply_options` MCP
    tool (`blur` / `dim` / `monet` / `wallpaper_visible`) when the user asks to

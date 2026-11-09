@@ -20,15 +20,15 @@ const TOKEN = fs.readFileSync(
   "utf8"
 ).trim();
 const api = (path, body) =>
-  fetch("http://127.0.0.1:9223" + path, {
+  fetch("http://127.0.0.1:9224" + path, {
     method: body ? "POST" : "GET",
     headers: { "Content-Type": "application/json", "X-Beautify-Token": TOKEN },
     body: body ? JSON.stringify(body) : undefined,
   }).then(async (r) => ({ status: r.status, body: await r.json() }));
 
-const list = await (await fetch("http://127.0.0.1:9222/json/list")).json();
+const list = await (await fetch("http://127.0.0.1:9223/json/list")).json();
 const page = list.find((t) => t.type === "page" && t.title === "ZCode");
-if (!page) { console.log("FAIL no ZCode page target (start ZCode with --remote-debugging-port=9222)"); process.exit(1); }
+if (!page) { console.log("FAIL no ZCode page target (start ZCode with --remote-debugging-port=9223)"); process.exit(1); }
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 let id = 1;
 const pend = new Map();
@@ -48,7 +48,7 @@ const styleInfo = () => evalp(`(() => {
 })()`).then((s) => JSON.parse(s));
 
 // --- baseline ----------------------------------------------------------------
-const health = await (await fetch("http://127.0.0.1:9223/api/health")).json();
+const health = await (await fetch("http://127.0.0.1:9224/api/health")).json();
 check("serve is 0.4.8+", Number(health.version.split(".")[2]) >= 8, health.version);
 
 const cfg0 = await api("/api/config");

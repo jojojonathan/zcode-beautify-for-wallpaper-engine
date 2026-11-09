@@ -39,7 +39,7 @@ Codex, Doubao, …) and ask it to follow `SKILL.md`.
 ```bash
 node --input-type=module -e "
 import { listTargets, pickRenderer, connect, evaluate } from './references/cdp-minimal.mjs';
-const t = pickRenderer(await listTargets(9222));
+const t = pickRenderer(await listTargets(9223));
 const ws = await connect(t.webSocketDebuggerUrl);
 console.log(await evaluate(ws, 'navigator.userAgent'));
 "

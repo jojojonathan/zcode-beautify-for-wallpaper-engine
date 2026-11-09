@@ -2,8 +2,8 @@
 // Zero dependencies, Node.js >= 20 (global fetch + WebSocket).
 //
 //   import { launchAndWait, listTargets, pickRenderer, connect, send, evaluate } from './cdp-minimal.mjs';
-//   await launchAndWait('C:/Program Files/<App>/<App>.exe', 9222);
-//   const target = pickRenderer(await listTargets(9222));
+//   await launchAndWait('C:/Program Files/<App>/<App>.exe', 9223);
+//   const target = pickRenderer(await listTargets(9223));
 //   const ws = await connect(target.webSocketDebuggerUrl);
 //   await send(ws, 'Page.enable');
 //   await evaluate(ws, 'document.title');

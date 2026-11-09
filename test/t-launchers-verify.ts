@@ -108,7 +108,7 @@ try {
 
   // The shortcut matrix: name vs target vs existing args vs location.
   const lnkPlain = path.join(home, "Desktop", "ZCode.lnk"); // → updated
-  const lnkHasFlag = path.join(home, "Desktop", "ZCode with-flag.lnk"); // → already-ok
+  const lnkHasFlag = path.join(home, "Desktop", "ZCode with-flag.lnk"); // → updated (stale port 9222 swapped for PORT)
   const lnkForeign = path.join(home, "Desktop", "记事本.lnk"); // → not ZCode, ignored
   const lnkDeepRenamed = path.join(home, "Desktop", "folder", "我的ZCode工具.lnk"); // → updated (nested + non-ASCII + non-ZCode name)
   const lnkOneDrive = path.join(oneDrive, "Desktop", "ZCode.lnk"); // → updated (OneDrive redirect)
@@ -140,8 +140,8 @@ try {
   const shortcuts = run1.fixes.filter((f) => f.kind === "shortcut");
   const registry = run1.fixes.filter((f) => f.kind === "registry");
   check("run1: 8 shortcut fixes found (foreign .lnk ignored)", shortcuts.length === 8, `${shortcuts.length}`);
-  check("run1: 7 updated", shortcuts.filter((f) => f.status === "updated").length === 7);
-  check("run1: 1 already-ok", shortcuts.filter((f) => f.status === "already-ok").length === 1);
+  check("run1: 8 updated (incl. stale-port swap)", shortcuts.filter((f) => f.status === "updated").length === 8);
+  check("run1: 0 already-ok", shortcuts.filter((f) => f.status === "already-ok").length === 0);
   check("run1: foreign shortcut absent from report", !shortcuts.some((f) => f.path === lnkForeign));
   const deep = shortcuts.find((f) => f.path === lnkDeepRenamed);
   check("run1: deep non-ASCII shortcut found & updated (UTF-8 round-trip)", !!deep && deep.status === "updated", deep?.path ?? "missing");
@@ -155,7 +155,7 @@ try {
 
   check("disk: plain shortcut gained the flag", lnkArgs(lnkPlain).includes(FLAG), lnkArgs(lnkPlain));
   check("disk: foreign shortcut untouched", lnkArgs(lnkForeign) === "");
-  check("disk: already-flagged shortcut untouched", lnkArgs(lnkHasFlag) === "--remote-debugging-port=9222");
+  check("disk: stale-port shortcut re-flagged to PORT", lnkArgs(lnkHasFlag) === FLAG, lnkArgs(lnkHasFlag));
 
   const run2 = await withSandboxEnv(() => repairLaunchers({ port: PORT, registryKeys: [TEST_KEY] }));
   check("run2: idempotent — everything already-ok", run2.fixes.length === 9 && run2.fixes.every((f) => f.status === "already-ok"), JSON.stringify(run2.fixes.map((f) => f.status)));

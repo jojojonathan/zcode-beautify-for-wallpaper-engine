@@ -4,7 +4,7 @@
 
 美化 **ZCode 桌面客户端**：任意图片——或任意**视频 / Wallpaper Engine 场景壁纸**——一键设为背景壁纸，并用 Material Design 3（莫奈取色）动态配色适配整个 UI；还能美化聊天区（消息气泡、对话列宽度、大会话流畅模式）——并附带实时悬浮设置面板。
 
-> 🧩 **0.5.0 起同时支持 WorkBuddy 桌面客户端**：加 `--target workbuddy`（或使用仓库内 `.codebuddy-plugin` 清单，已内置 `BEAUTIFY_TARGET=workbuddy`）即可把壁纸与莫奈配色注入 WorkBuddy。两个客户端的 CDP 端口（9222 / 9333）、控制 API 端口（9223 / 9334）、数据目录、启动项全部隔离，可同时开着互不干扰。WorkBuddy 使用其 `--wb-*` 设计变量族取色；气泡 / 消息流宽度 / 运行中图标这些聊天区增强仍为 ZCode 专属（绑定 ZCode 的 DOM），WorkBuddy 上面板会自动隐藏对应页签。
+> 🧩 **0.5.0 起同时支持 WorkBuddy 桌面客户端**：加 `--target workbuddy`（或使用仓库内 `.codebuddy-plugin` 清单，已内置 `BEAUTIFY_TARGET=workbuddy`）即可把壁纸与莫奈配色注入 WorkBuddy。两个客户端的 CDP 端口（9223 / 9333）、控制 API 端口（9224 / 9334）、数据目录、启动项全部隔离，可同时开着互不干扰。WorkBuddy 使用其 `--wb-*` 设计变量族取色；气泡 / 消息流宽度 / 运行中图标这些聊天区增强仍为 ZCode 专属（绑定 ZCode 的 DOM），WorkBuddy 上面板会自动隐藏对应页签。
 
 > 📷 欢迎贡献截图——向 `docs/screenshot.png` 提 PR 即可。
 
@@ -37,7 +37,7 @@
 
 ZCode 是 Electron 应用，UI 主题由 Tailwind v4 的 `--color-*` CSS 自定义属性驱动，且 production 版**默认不带调试端口**。本插件：
 
-1. 以 `--remote-debugging-port=9222` 启动 ZCode（仅需一次 `launch`；此后启动项由插件自动保持修复）；
+1. 以 `--remote-debugging-port=9223` 启动 ZCode（仅需一次 `launch`；此后启动项由插件自动保持修复）；
 2. 通过 Chrome DevTools Protocol 向 renderer 注入 CSS/JS：
    - 固定定位的壁纸层（图片以 data URI 嵌入，视频循环经本地 HTTP 流式加载），
    - 背景类变量改为半透明，让壁纸透出，
@@ -155,11 +155,11 @@ set BEAUTIFY_TARGET=workbuddy        # PowerShell: $env:BEAUTIFY_TARGET="workbud
 | `--target zcode\|workbuddy\|auto` | 全局参数：选择要美化的客户端（默认 zcode；`auto` 按已安装的客户端推断），等价于环境变量 `BEAUTIFY_TARGET` |
 | `enable` | 显式开启实验性 CDP 注入：记录同意、为启动项补上 CDP flag、启动本地服务 |
 | `disable [--keep-launchers]` | 关闭并回滚：清除注入外观（含渲染器本地缓存）、停止服务、从启动项剥离 flag（`--keep-launchers` 保留 flag） |
-| `launch [--port N]` | 以调试端口启动客户端（需先完全退出）；ZCode 默认 9222，WorkBuddy 默认 9333 |
+| `launch [--port N]` | 以调试端口启动客户端（需先完全退出）；ZCode 默认 9223，WorkBuddy 默认 9333 |
 | `apply <image> [--blur] [--dim] [--fit] [--no-monet]` | 设壁纸并适配配色（`--fit cover\|contain\|smart`） |
 | `apply-scene <pkg-or-dir>` | 端到端导入 Wallpaper Engine 场景 / 视频壁纸 |
 | `colors` | 不换图，重新应用已存主题 |
-| `serve [--detach] [--api-port M]` | 守护模式 + 设置面板 + 本地控制 API（默认 API 端口 9223）；`--detach` 使其脱离启动它的终端存活 |
+| `serve [--detach] [--api-port M]` | 守护模式 + 设置面板 + 本地控制 API（默认 API 端口 9224）；`--detach` 使其脱离启动它的终端存活 |
 | `watch` | 无面板守护模式：ZCode 重启后自动重注入 |
 | `repair-launchers [--dry-run] [--remove]` | 扫描/修复所有启动项，确保 ZCode 总是带 CDP 端口启动；`--remove` 改为从所有启动项剥离该 flag（回滚用） |
 | `reset` | 移除壁纸与配色覆盖 |
@@ -236,7 +236,7 @@ npm run bundle   # 预构建单文件产物（仓库随附）
 
 **开启会做什么**（`enable_experimental`，或 `zcode-beautify enable`）：
 
-- 为客户端的启动项（桌面 / 开始菜单 / 任务栏快捷方式、`zcode://` 协议、资源管理器右键菜单）加上 `--remote-debugging-port=9222`，使 ZCode 打开本地 CDP 端口。需要管理员权限的机器级条目只报告、绝不修改。
+- 为客户端的启动项（桌面 / 开始菜单 / 任务栏快捷方式、`zcode://` 协议、资源管理器右键菜单）加上 `--remote-debugging-port=9223`，使 ZCode 打开本地 CDP 端口。需要管理员权限的机器级条目只报告、绝不修改。
 - 启动本地服务，并恢复"自愈"——在客户端更新重建快捷方式后自动补回 flag。
 - 在插件配置中记录同意（时间戳 + 插件版本）。0.6.0 之前的老安装自动沿用开启状态（标记为 migrated）；面板会显示该状态并提供一键停用。
 
@@ -252,7 +252,7 @@ npm run bundle   # 预构建单文件产物（仓库随附）
 ## 风险与限制
 
 - 注入通过 CDP（Chrome DevTools 协议）实现，属**非官方**手段，且为**实验性、需显式 opt-in**（见上节）。ZCode 更新可能使其失效；`reset` 可随时还原默认外观。
-- `launch` 需要重启一次 ZCode。若 `serve`/`watch` 未运行，每次 ZCode 重启主题都会丢失（CDP 会话随连接关闭）。无需手动修改：实验模式开启时，插件会自动为所有 ZCode 启动项（快捷方式、协议处理器、右键菜单）补上 ` --remote-debugging-port=9222`，只要 `serve` 在运行，重启也会自动恢复。请用 `serve --detach` 启动：前台 `serve` 会随启动它的终端（或智能体会话）一起退出，面板随即显示离线。
+- `launch` 需要重启一次 ZCode。若 `serve`/`watch` 未运行，每次 ZCode 重启主题都会丢失（CDP 会话随连接关闭）。无需手动修改：实验模式开启时，插件会自动为所有 ZCode 启动项（快捷方式、协议处理器、右键菜单）补上 ` --remote-debugging-port=9223`，只要 `serve` 在运行，重启也会自动恢复。请用 `serve --detach` 启动：前台 `serve` 会随启动它的终端（或智能体会话）一起退出，面板随即显示离线。
 - 聊天区样式的选择器（`[data-v4-user-input-bubble]`、`conversation:max-w-*` 容器查询）绑定 ZCode 当前 DOM 结构；ZCode 改版后可能需要更新选择器。
 - 控制 API 仅绑定 `127.0.0.1`，并使用每次启动随机生成的 token 鉴权；媒体 URL 以查询参数携带 token。CDP 端口本身无鉴权 —— 见上节 opt-in 说明。
 - 动态导入（场景捕获）仅限 Windows（Desktop Duplication API）；其余功能跨平台。

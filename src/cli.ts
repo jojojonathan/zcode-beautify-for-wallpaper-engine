@@ -45,7 +45,7 @@ Commands:
     --sidebar-dim <0-100>        Extra-darken the left sidebar (default 0)
     --fit <mode>                 cover | contain | smart (default cover)
     --no-monet                   Keep the client's original colors
-    --port <N>                   CDP port (default 9222)
+    --port <N>                   CDP port (default 9223)
   apply-scene <pkg-or-dir> [options]
                                  Import a Wallpaper Engine scene wallpaper,
                                  render it to a seamless loop and apply it.
@@ -58,11 +58,12 @@ Commands:
   status [--port N]              Show CDP reachability and renderer targets
   watch [--port N]               Watch mode: re-inject whenever the app (re)starts
   serve [--port N] [--api-port M] [--detach]
-                                 Watch mode + settings panel + local API (default API port 9223)
+                                 Watch mode + settings panel + local API (default API port 9224)
                                  --detach runs it in the background, outliving this shell
   repair-launchers [--port N] [--dry-run] [--remove]
                                  Add --remote-debugging-port to the app's launch
-                                 entries (shortcuts, deep-link handler) missing it;
+                                 entries (shortcuts, deep-link handler) missing it
+                                 or carrying a stale port;
                                  --remove strips the flag from every entry instead
 `;
 

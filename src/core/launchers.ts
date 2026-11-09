@@ -111,7 +111,7 @@ function Add-Result($kind, $p, $before, $after, $status, $reason) {
 }
 
 # Strip any --remote-debugging-port=<digits> (any port, not just $port) and
-# the whitespace before it, so "app.exe --remote-debugging-port=9222" becomes
+# the whitespace before it, so "app.exe --remote-debugging-port=9223" becomes
 # "app.exe" and quoted command strings stay intact.
 function Remove-Flag([string]$s) {
   return ($s -replace '\\s*--remote-debugging-port=\\d+', '').Trim()
@@ -146,10 +146,16 @@ foreach ($item in $lnks) {
   $before = [string]$sc.Arguments
   if ($mode -eq 'add') {
     if ($before -match 'remote-debugging-port') {
-      Add-Result 'shortcut' $item.FullName $before $before 'already-ok' $null
-      continue
+      if ($before -match ('--remote-debugging-port=' + $port + '\\b')) {
+        Add-Result 'shortcut' $item.FullName $before $before 'already-ok' $null
+        continue
+      }
+      # Stale port (e.g. the pre-0.6.5 default 9222): swap it for the
+      # requested one instead of skipping the entry.
+      $after = (Remove-Flag $before).Trim() + $flag
+    } else {
+      $after = ($before.Trim() + $flag).Trim()
     }
-    $after = ($before.Trim() + $flag).Trim()
   } else {
     if ($before -notmatch 'remote-debugging-port') {
       Add-Result 'shortcut' $item.FullName $before $before 'already-ok' $null
@@ -181,12 +187,17 @@ foreach ($k in $keys) {
     if ($before -notmatch [regex]::Escape($exeName)) { continue }
     if ($mode -eq 'add') {
       if ($before -match 'remote-debugging-port') {
-        Add-Result 'registry' $k $before $before 'already-ok' $null
-        continue
+        if ($before -match ('--remote-debugging-port=' + $port + '\\b')) {
+          Add-Result 'registry' $k $before $before 'already-ok' $null
+          continue
+        }
+        # Stale port: strip it, then re-insert the requested one after the exe.
+        $after = (Remove-Flag $before).Trim() -replace '^(\\s*("[^"]+"|\\S+))', ('$1' + $flag)
+      } else {
+        # Insert the flag directly after the executable token, keeping any
+        # placeholders ("%1") and quoting untouched.
+        $after = $before -replace '^(\\s*("[^"]+"|\\S+))', ('$1' + $flag)
       }
-      # Insert the flag directly after the executable token, keeping any
-      # placeholders ("%1") and quoting untouched.
-      $after = $before -replace '^(\\s*("[^"]+"|\\S+))', ('$1' + $flag)
     } else {
       if ($before -notmatch 'remote-debugging-port') {
         Add-Result 'registry' $k $before $before 'already-ok' $null

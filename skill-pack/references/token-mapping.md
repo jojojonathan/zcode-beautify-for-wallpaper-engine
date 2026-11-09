@@ -7,7 +7,7 @@ app-agnostic.
 ## How to discover the tokens (10 minutes)
 
 1. Launch the app with the debug port (`cdp-minimal.mjs`) and attach DevTools:
-   open `http://127.0.0.1:9222/json/list`, copy the page target's
+   open `http://127.0.0.1:9223/json/list`, copy the page target's
    `webSocketDebuggerUrl` into a WebSocket client, then
    `Runtime.evaluate('window.location.href')` — or simply open
    `chrome://inspect` in a regular Chrome and connect to the port. Some Electron

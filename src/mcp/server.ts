@@ -60,7 +60,7 @@ function bootstrapServe(): void {
       );
       return;
     }
-    // The API port is a setting; a hardcoded 9223 here spawns duplicate serves
+    // The API port is a setting; a hardcoded 9224 here spawns duplicate serves
     // whenever the configured port differs.
     const apiPort = cfg.apiPort ?? target().apiPort;
     spawnServeDetached(apiPort, cliJs);

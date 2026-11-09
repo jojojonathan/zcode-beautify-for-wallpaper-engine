@@ -7,12 +7,12 @@ let failed = 0;
 const check = (l, c, x = "") => { if (!c) failed++; console.log(`${c ? "ok  " : "FAIL"} ${l}${x ? ` (${x})` : ""}`); };
 
 const post = async (body) =>
-  (await fetch("http://127.0.0.1:9223/api/config", {
+  (await fetch("http://127.0.0.1:9224/api/config", {
     method: "POST", headers: { "X-Beautify-Token": token, "Content-Type": "application/json" },
     body: JSON.stringify(body),
   })).json();
 
-const ws = await connect(pickRenderer(await listTargets(9222)).webSocketDebuggerUrl);
+const ws = await connect(pickRenderer(await listTargets(9223)).webSocketDebuggerUrl);
 
 // 1) panel from the NEW serve carries the bubble section
 const panel = await evaluate(ws, `(() => ({
@@ -44,7 +44,7 @@ check("left align via serve push", st.align === "flex-start", String(st.align));
 
 // 3) sanitize rejects garbage
 const r2 = await post({ bubbleLook: { preset: "hacker", tint: 9999 } });
-const cfg = await (await fetch("http://127.0.0.1:9223/api/config", { headers: { "X-Beautify-Token": token } })).json();
+const cfg = await (await fetch("http://127.0.0.1:9224/api/config", { headers: { "X-Beautify-Token": token } })).json();
 check("sanitize degrades unknown preset, clamps tint", cfg.bubbleLook.preset === "default" && cfg.bubbleLook.tint === 100, JSON.stringify(cfg.bubbleLook));
 
 // 4) restore default

@@ -379,7 +379,7 @@ export interface BeautifyConfig {
   mediaType?: "image" | "video";
   /** Cache hash of the imported scene (loop at scenes/<hash>/loop.mp4). */
   sceneHash?: string;
-  /** Serve API port used to derive sceneVideoUrl (target default: 9223/9334). */
+  /** Serve API port used to derive sceneVideoUrl (target default: 9224/9334). */
   apiPort?: number;
   /** Wallpaper rotation playlist (定时播放). */
   rotation?: RotationConfig;
@@ -414,7 +414,7 @@ export interface BeautifyConfig {
 }
 
 export const DEFAULT_CONFIG: BeautifyConfig = {
-  port: 9222,
+  port: 9223,
   experimental: { enabled: false },
   blur: 0,
   dim: 25,

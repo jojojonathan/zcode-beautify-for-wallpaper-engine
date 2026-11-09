@@ -35,7 +35,8 @@ export interface AppTarget {
   /** Data dir for config/wallpapers; env override comes first. */
   dataDirEnvVars: string[];
   /** Default CDP debug port. Distinct per client so two running clients can
-   *  never share one debug endpoint (9222 is ZCode's long-standing default). */
+   *  never share one debug endpoint (ZCode moved 9222→9223 in 0.6.5, freeing
+   *  9222 for Chrome-style debuggers that hard-code it). */
   cdpPort: number;
   /** Default local control-API port for `serve`. */
   apiPort: number;
@@ -205,8 +206,8 @@ const ZCODE: AppTarget = {
   exeEnvVars: ["ZCODE_WINDOWS_APP_INSTALL_DIR"],
   tokens: "color",
   dataDirEnvVars: ["ZCODE_BEAUTIFY_DATA_DIR"],
-  cdpPort: 9222,
-  apiPort: 9223,
+  cdpPort: 9223,
+  apiPort: 9224,
   defaultDataDir: () => path.join(os.homedir(), ".zcode", "cli", "plugins", "data", "zcode-beautify"),
   rendererUrlIncludes: ["out/renderer/index.html"],
   rendererTitles: ["ZCode"],

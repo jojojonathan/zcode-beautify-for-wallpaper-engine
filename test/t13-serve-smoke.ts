@@ -5,7 +5,7 @@
  * way the panel and the MCP bootstrap do: token auth, health payload, config
  * round-trip with normalization, sibling endpoints, and config persistence.
  *
- * Nothing touches the real ~/.zcode data dir, the live serve on 9223, or
+ * Nothing touches the real ~/.zcode data dir, the live serve on 9224, or
  * ZCode itself (the CDP port points nowhere; injection failures are
  * fire-and-forget by design).
  *

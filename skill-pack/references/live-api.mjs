@@ -16,8 +16,8 @@ import path from "node:path";
 import { listTargets, pickRenderer, connect, send, evaluate } from "./cdp-minimal.mjs";
 import { extractTheme, buildTokenCss } from "./monet-color.mjs";
 
-const CDP_PORT = Number(process.env.BEAUTIFY_CDP_PORT ?? 9222);
-const API_PORT = Number(process.env.BEAUTIFY_API_PORT ?? 9223);
+const CDP_PORT = Number(process.env.BEAUTIFY_CDP_PORT ?? 9223);
+const API_PORT = Number(process.env.BEAUTIFY_API_PORT ?? 9224);
 const MARKER = "beautify";
 const CONFIG_FILE = path.join(process.cwd(), "beautify.config.json");
 

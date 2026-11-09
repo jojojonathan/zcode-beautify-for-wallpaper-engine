@@ -35,7 +35,7 @@ export function configFile(): string {
 
 export function loadConfig(): StoredConfig {
   try {
-    return JSON.parse(fs.readFileSync(configFile(), "utf8")) as StoredConfig;
+    return migrateLegacyPorts(JSON.parse(fs.readFileSync(configFile(), "utf8")) as StoredConfig);
   } catch (err) {
     // A PARSE error (not "file missing") means the stored config is corrupt:
     // quarantine it so the next save does not silently cement the wipe, and
@@ -49,6 +49,27 @@ export function loadConfig(): StoredConfig {
     }
     return {};
   }
+}
+
+/**
+ * 0.6.5 moved ZCode's defaults: CDP 9222→9223 (9222 is the port every
+ * Chrome-debugging tool hard-codes) and control API 9223→9224 (it would now
+ * collide with the CDP port). Configs saved by older versions still carry the
+ * old defaults, and a stored port wins over the target default at every read
+ * (apply/serve/repair all resolve `stored.port ?? target().cdpPort`), so those
+ * installs would keep talking to a port nothing listens on. Remap the old
+ * default values in memory on read; the next saveConfig persists the fix, and
+ * values that differ from an old default are explicit choices and stay put.
+ */
+function migrateLegacyPorts<T extends StoredConfig>(cfg: T): T {
+  if (cfg.port === 9222) cfg.port = 9223;
+  if (cfg.apiPort === 9223) cfg.apiPort = 9224;
+  // sceneVideoUrl is persisted as an absolute URL into the serve API; left
+  // as-is it would point at the new CDP port and the video wallpaper 404s.
+  if (typeof cfg.sceneVideoUrl === "string") {
+    cfg.sceneVideoUrl = cfg.sceneVideoUrl.replace("//127.0.0.1:9223/", "//127.0.0.1:9224/");
+  }
+  return cfg;
 }
 
 /**

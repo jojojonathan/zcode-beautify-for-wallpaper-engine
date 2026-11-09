@@ -83,7 +83,7 @@ install the plugin instead: read `INSTALL-FOR-AI.md` at the repository root
 
 ```js
 import { launchAndWait } from './references/cdp-minimal.mjs';
-await launchAndWait('C:/Program Files/<App>/<App>.exe', 9222);
+await launchAndWait('C:/Program Files/<App>/<App>.exe', 9223);
 ```
 
 **Trap — single-instance lock (do not skip this).** Electron apps usually
@@ -102,7 +102,7 @@ need their default flags preserved; when in doubt, read the app's shortcuts.
 
 ```js
 import { listTargets, pickRenderer, connect, send } from './references/cdp-minimal.mjs';
-const target = pickRenderer(await listTargets(9222)); // type=page, has webSocketDebuggerUrl, not devtools
+const target = pickRenderer(await listTargets(9223)); // type=page, has webSocketDebuggerUrl, not devtools
 const ws = await connect(target.webSocketDebuggerUrl);
 ```
 

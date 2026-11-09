@@ -29,7 +29,7 @@ target before running any command:
 
 | User's client | How to target it | CDP / API port |
 |---|---|---|
-| ZCode | default (nothing to add) | 9222 / 9223 |
+| ZCode | default (nothing to add) | 9223 / 9224 |
 | WorkBuddy | `--target workbuddy`, or env `BEAUTIFY_TARGET=workbuddy` | 9333 / 9334 |
 
 WorkBuddy is installed through `.codebuddy-plugin/` (its marketplace manifest
@@ -183,7 +183,7 @@ everything else.
    service, writes no flags, and the injection tools answer with guidance
    until enabled. Before opting in, tell the user what it means (see the
    README section "Experimental opt-in (CDP injection)"): the client's launch
-   entries get `--remote-debugging-port=9222` so a local CDP port opens;
+   entries get `--remote-debugging-port=9223` so a local CDP port opens;
    that port binds `127.0.0.1` but is unauthenticated — any local process can
    attach to the renderer while it is open. With consent, call the
    `enable_experimental` MCP tool (records consent, repairs the launch
