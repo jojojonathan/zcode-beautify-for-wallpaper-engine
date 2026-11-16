@@ -24,7 +24,8 @@ import {
   listTargets,
   pickRendererTargets,
 } from "./cdp.js";
-import { buildPayload, DEFAULT_CONFIG, normalizeBubbleLook, normalizeChatLook, normalizeTaskSpinnerLook, resolveSpinnerImageRef, type BeautifyConfig, type RotationConfig, type RotationEntry, type RotationMode, type RotationPlan } from "./inject.js";
+import { buildPayload, DEFAULT_CONFIG, normalizeBubbleLook, normalizeChatLoadLook, normalizeChatLook, normalizeFabLook, normalizeListPaging, normalizeTaskSpinnerLook, resolveSpinnerImageRef, type BeautifyConfig, type RotationConfig, type RotationEntry, type RotationMode, type RotationPlan } from "./inject.js";
+import { normalizeComponentLook } from "./componentLook.js";
 import { loadWallpaper, extractPalette, type WallpaperAssets } from "./monet.js";
 import { themeFromSourceColor, argbFromRgb } from "@material/material-color-utilities";
 import { buildPanelScript } from "../panel/panelScript.js";
@@ -37,6 +38,7 @@ import { listWeWallpapers, resolveWePreview, weDirForPath, weTitleForPath } from
 import { getInstallGuide, checkFfmpeg } from "./dependencyCheck.js";
 import { execFileP } from "./exec.js";
 import { scenesCacheRoot } from "./cacheManager.js";
+import { readSessionPreview } from "./sessionStore.js";
 
 const MAX_WALLPAPER_BYTES = 20 * 1024 * 1024;
 const MAX_BODY_BYTES = MAX_WALLPAPER_BYTES + 1024 * 1024;
@@ -287,6 +289,8 @@ function publicConfig(config: BeautifyConfig) {
     dayNight: config.dayNight ?? null,
     chatLook: normalizeChatLook(config.chatLook),
     bubbleLook: normalizeBubbleLook(config.bubbleLook),
+    // 组件精修 (WorkBuddy-only): normalized look for the panel's 组件 tab.
+    componentLook: normalizeComponentLook(config.componentLook),
     // 运行中图标: normalized look plus the RESOLVED paint URL so the panel can
     // preview exactly what the sidebar will show ("" = stock spinner). The
     // 完成未读 / 出错 slots get their own resolved preview URLs.
@@ -297,6 +301,22 @@ function publicConfig(config: BeautifyConfig) {
         : "",
     spinnerUnreadUrl: resolveSpinnerImageRef(config.taskSpinnerLook?.unreadImage ?? "", config.apiPort ?? appTarget().apiPort, mediaToken),
     spinnerErrorUrl: resolveSpinnerImageRef(config.taskSpinnerLook?.errorImage ?? "", config.apiPort ?? appTarget().apiPort, mediaToken),
+    // 会话底部加载图标: normalized look + resolved paint URL for the preview.
+    chatLoadLook: normalizeChatLoadLook(config.chatLoadLook),
+    chatLoadImageUrl: normalizeChatLoadLook(config.chatLoadLook).mode === "image"
+      ? resolveSpinnerImageRef(config.chatLoadLook?.image ?? "", config.apiPort ?? appTarget().apiPort, mediaToken)
+      : "",
+    // 会话列表分页: normalized counts for the panel's sidebar controls.
+    listPaging: normalizeListPaging(config.listPaging),
+    // 设置按钮 (panel-opener FAB): normalized look + resolved paint URL for
+    // the preview; the FAB itself is styled panel-side from /api/config.
+    fabLook: normalizeFabLook(config.fabLook),
+    // Resolved whenever a ref EXISTS (not only in image mode): the panel can
+    // switch modes locally and must be able to paint the ball immediately,
+    // before the next beat brings the pushed config back around.
+    fabImageUrl: normalizeFabLook(config.fabLook).image
+      ? resolveSpinnerImageRef(config.fabLook?.image ?? "", config.apiPort ?? appTarget().apiPort, mediaToken)
+      : "",
     startupClean: config.startupClean !== false,
     showOnUpdater: config.showOnUpdater === true,
     importRes: config.importRes ?? { mode: "auto" },
@@ -362,6 +382,13 @@ function sanitize(body: any): Partial<BeautifyConfig> {
       perfSmooth: cl.perfSmooth === 1 || cl.perfSmooth === true ? 1 : 0,
       hideElapsedDecimal: cl.hideElapsedDecimal === 1 || cl.hideElapsedDecimal === true ? 1 : 0,
       dragResize: cl.dragResize === 1 || cl.dragResize === true ? 1 : 0,
+      sessionHover: cl.sessionHover === 1 || cl.sessionHover === true ? 1 : 0,
+      sessionHoverSide: cl.sessionHoverSide === 0 || cl.sessionHoverSide === false ? 0 : 1,
+      sessionHoverMax:
+        typeof cl.sessionHoverMax === "number" && Number.isFinite(cl.sessionHoverMax) && cl.sessionHoverMax >= 1
+          ? Math.min(60, Math.round(cl.sessionHoverMax))
+          : 10,
+      composerFade: pct(cl.composerFade) ?? 50,
     };
   }
   // User message bubble look (聊天气泡): normalizeBubbleLook fills any field
@@ -369,11 +396,28 @@ function sanitize(body: any): Partial<BeautifyConfig> {
   if (body?.bubbleLook && typeof body.bubbleLook === "object") {
     out.bubbleLook = normalizeBubbleLook(body.bubbleLook);
   }
+  // 组件精修 (组件 tab, WorkBuddy-only): same full-object contract — the panel
+  // posts every field, the normalizer clamps and fills the rest.
+  if (body?.componentLook && typeof body.componentLook === "object") {
+    out.componentLook = normalizeComponentLook(body.componentLook);
+  }
   // 运行中图标: same contract as bubbleLook — the panel always posts the full
   // object; normalizeTaskSpinnerLook fills/clamps the rest. The image REF is
   // stored as-is; buildPayload resolves it to a paintable URL.
   if (body?.taskSpinnerLook && typeof body.taskSpinnerLook === "object") {
     out.taskSpinnerLook = normalizeTaskSpinnerLook(body.taskSpinnerLook);
+  }
+  // 会话底部加载图标: identical contract, mirrored normalizer.
+  if (body?.chatLoadLook && typeof body.chatLoadLook === "object") {
+    out.chatLoadLook = normalizeChatLoadLook(body.chatLoadLook);
+  }
+  // 会话列表分页: same full-object contract — initial 0 = stock paging.
+  if (body?.listPaging && typeof body.listPaging === "object") {
+    out.listPaging = normalizeListPaging(body.listPaging);
+  }
+  // 设置按钮 (FAB): same full-object contract.
+  if (body?.fabLook && typeof body.fabLook === "object") {
+    out.fabLook = normalizeFabLook(body.fabLook);
   }
   // Day/night look schedule (护眼): two dim/blur presets switch at times.
   const HHMM_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -503,9 +547,12 @@ async function holdSession(
     chatLook: payload.chatLook,
     bubbleLook: payload.bubbleLook,
     spinnerLook: payload.taskSpinnerLook,
+    chatLoadLook: payload.chatLoadLook,
+    listPaging: payload.listPaging,
     startupClean: payload.startupClean,
     chatUi: payload.chatUi,
     startupProbe: payload.startupProbe,
+    previewApi: payload.previewApi,
   });
   const { identifier } = await conn.send("Page.addScriptToEvaluateOnNewDocument", {
     source: bootstrap,
@@ -557,9 +604,12 @@ async function pushConfigToSessions(config: BeautifyConfig): Promise<number> {
     chatLook: payload.chatLook,
     bubbleLook: payload.bubbleLook,
     spinnerLook: payload.taskSpinnerLook,
+    chatLoadLook: payload.chatLoadLook,
+    listPaging: payload.listPaging,
     startupClean: payload.startupClean,
     chatUi: payload.chatUi,
     startupProbe: payload.startupProbe,
+    previewApi: payload.previewApi,
   });
   let ok = 0;
   for (const [id, session] of held) {
@@ -992,7 +1042,7 @@ export async function startServe(opts: ServeOptions): Promise<void> {
       // the loading slot's mode.
       if (req.method === "POST" && url.pathname === "/api/spinner") {
         const body = JSON.parse(await readBody(req));
-        const slot = body?.slot === "unread" || body?.slot === "error" ? body.slot : "running";
+        const slot = body?.slot === "unread" || body?.slot === "error" || body?.slot === "loading" || body?.slot === "fab" ? body.slot : "running";
         const dataUri = typeof body?.dataUri === "string" ? body.dataUri : "";
         const m = /^data:(image\/(?:gif|png|webp|jpeg|bmp|svg\+xml));base64,(.+)$/.exec(dataUri);
         if (!m) throw new Error("dataUri must be a base64 image data URI (gif/png/webp/jpeg/bmp/svg)");
@@ -1001,7 +1051,7 @@ export async function startServe(opts: ServeOptions): Promise<void> {
           throw new Error("image too large (max 2 MB) — a 16px icon wants a few KB");
         }
         const ext = m[1] === "image/svg+xml" ? ".svg" : IMAGE_EXT[m[1]];
-        const base = slot === "running" ? "spinner" : "spinner-" + slot;
+        const base = slot === "running" ? "spinner" : slot === "fab" ? "fab" : "spinner-" + slot;
         // Written under spinner/, NOT the data dir root — the root is the
         // wallpaper library's namespace (/api/library scans it).
         const dest = path.join(spinnerDir(), base + ext);
@@ -1017,6 +1067,32 @@ export async function startServe(opts: ServeOptions): Promise<void> {
         }
         fs.writeFileSync(dest, bytes);
         const config = runtimeConfig();
+        if (slot === "fab") {
+          // 设置按钮 (panel-opener FAB) lives in its own config object; the
+          // FAB is styled panel-side from /api/config, so the theme push only
+          // keeps the held sessions' payloads in sync (it early-returns).
+          const look = normalizeFabLook(config.fabLook);
+          const nextCfg: BeautifyConfig = {
+            ...config,
+            fabLook: { ...look, mode: "image" as const, image: dest },
+          };
+          saveConfig(persisted(nextCfg));
+          const windows = await pushConfigToSessions(nextCfg).catch(() => 0);
+          sendJson(res, 200, { ok: true, windows, ...publicConfig(nextCfg) });
+          return;
+        }
+        if (slot === "loading") {
+          // 会话底部加载图标 lives in its own config object.
+          const look = normalizeChatLoadLook(config.chatLoadLook);
+          const nextCfg: BeautifyConfig = {
+            ...config,
+            chatLoadLook: { ...look, mode: "image" as const, image: dest },
+          };
+          saveConfig(persisted(nextCfg));
+          const windows = await pushConfigToSessions(nextCfg).catch(() => 0);
+          sendJson(res, 200, { ok: true, windows, ...publicConfig(nextCfg) });
+          return;
+        }
         const look = normalizeTaskSpinnerLook(config.taskSpinnerLook);
         const nextCfg: BeautifyConfig = {
           ...config,
@@ -1158,6 +1234,25 @@ export async function startServe(opts: ServeOptions): Promise<void> {
         const body = await checkLatestRelease();
         updateCheckCache = { at: Date.now(), body };
         sendJson(res, 200, body);
+        return;
+      }
+
+      // --- 会话概览悬停卡 data (sidebar session hover preview) ------------------
+      // The injected hover card fetches this with the ?t= token (same auth as
+      // media URLs). Reads ZCode's own session db read-only; see
+      // core/sessionStore.ts for the format and the real-user filtering.
+      if (req.method === "GET" && url.pathname === "/api/session-preview") {
+        const session = String(url.searchParams.get("session") ?? "");
+        const result = await readSessionPreview(session);
+        if (result.ok) {
+          sendJson(res, 200, { ok: true, ...result.data });
+        } else if (result.reason === "not-found") {
+          sendJson(res, 404, { ok: false, error: "session not found" });
+        } else if (result.reason === "bad-id") {
+          sendJson(res, 400, { ok: false, error: "bad session id" });
+        } else {
+          sendJson(res, 503, { ok: false, error: "session store unavailable" });
+        }
         return;
       }
 

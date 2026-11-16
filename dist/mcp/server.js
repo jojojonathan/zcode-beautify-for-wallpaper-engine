@@ -3276,8 +3276,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path14) {
-      let input2 = path14;
+    function removeDotSegments(path15) {
+      let input2 = path15;
       const output2 = [];
       let nextSlash = -1;
       let len = 0;
@@ -3686,8 +3686,8 @@ var require_schemes = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path14 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path14 && path14 !== "/" ? path14 : void 0;
+        const path15 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path15 && path15 !== "/" ? path15 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -7199,12 +7199,12 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f2;
     };
-    function addFormats(ajv, list, fs11, exportName) {
+    function addFormats(ajv, list, fs12, exportName) {
       var _a3;
       var _b;
       (_a3 = (_b = ajv.opts.code).formats) !== null && _a3 !== void 0 ? _a3 : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
       for (const f2 of list)
-        ajv.addFormat(f2, fs11[f2]);
+        ajv.addFormat(f2, fs12[f2]);
     }
     module.exports = exports = formatsPlugin;
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -7233,12 +7233,13 @@ function sanitizeCustomBubbleCss(raw) {
 function rewriteCustomBubbleCss(css, sel, rowSel) {
   return css.replace(/\.zb-bubble-row(?![\w-])/g, rowSel).replace(/\.zb-bubble(?![\w-])/g, sel);
 }
-var BUBBLE_SELECTOR_REAL, BUBBLE_ROW_SELECTOR_REAL, CUSTOM_CSS_MAX;
+var BUBBLE_SELECTOR_REAL, BUBBLE_ROW_SELECTOR_REAL, BUBBLE_SELECTOR_PREVIEW, CUSTOM_CSS_MAX;
 var init_bubbleRecipes = __esm({
   "dist/core/bubbleRecipes.js"() {
     "use strict";
     BUBBLE_SELECTOR_REAL = "[data-v4-user-input-bubble]";
     BUBBLE_ROW_SELECTOR_REAL = '[class~="group/user-row"]';
+    BUBBLE_SELECTOR_PREVIEW = ".zb-bubble";
     CUSTOM_CSS_MAX = 8e3;
   }
 });
@@ -7549,9 +7550,35 @@ function buildBootstrapScript(payload) {
   var VIDEO_SRC = ${JSON.stringify(videoSrc)};
   var WP_IMG = ${JSON.stringify(payload.wallpaperDataUri ?? "")};
   var VOL = Math.max(0, Math.min(100, Math.round(${JSON.stringify(payload.videoVolume ?? 0)})));
-  var CHAT = ${JSON.stringify(JSON.stringify(payload.chatLook ?? { chatDim: 0, maskTop: 0, maskBottom: 0, frost: 0, widthCapRem: 0, widthInsetRem: 0, perfSmooth: 0, hideElapsedDecimal: 0, dragResize: 0 }))};
+  var CHAT = ${JSON.stringify(JSON.stringify(payload.chatLook ?? { chatDim: 0, maskTop: 0, maskBottom: 0, frost: 0, widthCapRem: 0, widthInsetRem: 0, perfSmooth: 0, hideElapsedDecimal: 0, dragResize: 0, composerFade: 0, sessionHover: 0, sessionHoverSide: 1, sessionHoverMax: 10 }))};
+  // \u4F1A\u8BDD\u6982\u89C8\u60AC\u505C\u5361: the serve endpoint (token included) the hover card
+  // fetches its prompt list from; empty = the feature stays unmounted.
+  // A serve restart rotates the token while css/chat stay identical \u2014 the
+  // identity checks below would then early-return this eval and leave EARLIER
+  // generations' hover listeners bound. The slot below is refreshed by every
+  // eval (this line runs before any fast path), so those listeners keep
+  // reading the FRESHEST endpoint; PREV_API additionally feeds the final
+  // identity check so a token rotation re-runs the full apply (same
+  // semantics as a wallpaper URL rotation re-running the transition).
+  var PREVIEW_API = ${JSON.stringify(payload.previewApi ?? "")};
+  var PREV_API = window.__zcodeBeautify.previewApi;
+  window.__zcodeBeautify.previewApi = PREVIEW_API;
   var BUBBLE = ${JSON.stringify(JSON.stringify(payload.bubbleLook ?? { preset: "default", tint: 28, radius: 12, width: 70, align: "right" }))};
   var SPIN = ${JSON.stringify(JSON.stringify(payload.spinnerLook ?? { mode: "default", image: "", spin: true, size: 16 }))};
+  var LOAD = ${JSON.stringify(JSON.stringify(payload.chatLoadLook ?? { mode: "default", image: "", spin: true, size: 16 }))};
+  // \u4F1A\u8BDD\u5217\u8868\u5206\u9875 (sidebar list paging): {initial, step, collapse} \u2014 initial 0
+  // = the stock 5/+5 paging with no collapse control.
+  var LIST = ${JSON.stringify(JSON.stringify(payload.listPaging ?? { initial: 0, step: 0, collapse: 0 }))};
+  // Generation stamp: the BUILD version of the paging engine. Older
+  // generations (their addScriptToEvaluateOnNewDocument registrations outlive
+  // the serve restart that shipped fixed code) leave identical css/chat/list
+  // keys \u2014 without the stamp the newer eval would early-return on the
+  // identity check and the OLD machinery (buggy scan, stale closures) would
+  // keep running. A plain eval-instance marker would be wrong: every
+  // Runtime.evaluate creates fresh closures, so same-build pushes would
+  // always full-apply and replay the wallpaper transition. Bump
+  // LIST_PAGING_VER whenever the paging code below changes.
+  var LIST_VER = ${JSON.stringify(LIST_PAGING_VER)};
   // Bubble recipe tables must be initialized HERE, before the fast paths run:
   // applyBubbleLook() is reachable from the volume fast path at the top of
   // this function body, and var initializers down below would still be
@@ -7559,6 +7586,22 @@ function buildBootstrapScript(payload) {
   // bootstrap silently).
   var BUB = '[data-v4-user-input-bubble]';
   var BUB_ROW = '[class~="group/user-row"]';
+  // \u4F1A\u8BDD\u6982\u89C8\u60AC\u505C\u5361 state \u2014 initialized HERE, above the fast paths, for the
+  // same reason as BUB/RECIPES below: applyChatLook (\u2192 zbHoverApply, which
+  // binds listeners closing over these) is reachable from the volume/chat
+  // fast paths at the top of this body, and a generation that takes a fast
+  // path NEVER executes the var initializers further down \u2014 its listeners
+  // would then read undefined forever (live hit: toggling the panel switch
+  // rebound with zbHoverCache undefined; every hover threw and the card
+  // stayed empty).
+  var zbHoverTimer = 0;
+  var zbHoverCloseTimer = 0;
+  var zbHoverCur = '';
+  var zbHoverPend = '';
+  var zbHoverCache = {};
+  var zbHoverRowEl = null;
+  var zbHoverRectTop = 0;
+  var zbHoverRectLeft = 0;
   // --zb-bubble-tint holds 0-1; the mixes scale it back to a percentage.
   // Recipes + custom CSS are baked serve-side from core/bubbleRecipes.ts so
   // this table and the panel preview share one source of truth. The custom
@@ -7573,7 +7616,8 @@ function buildBootstrapScript(payload) {
   if (VIDEO_SRC && VOL !== (window.__zcodeBeautify.vol ?? 0)
       && window.__zcodeBeautify.cssText === ${JSON.stringify(payload.css)}
       && window.__zcodeBeautify.videoSrc === VIDEO_SRC
-      && window.__zcodeBeautify.kb === ${JSON.stringify(Boolean(payload.kenBurns))}) {
+      && window.__zcodeBeautify.kb === ${JSON.stringify(Boolean(payload.kenBurns))}
+      && window.__zcodeBeautify.listStamp === LIST_VER) {
     var liveVid = document.getElementById(MARKER + '-video');
     if (liveVid) {
       liveVid.muted = VOL === 0;
@@ -7593,6 +7637,15 @@ function buildBootstrapScript(payload) {
       window.__zcodeBeautify.spinnerKey = SPIN;
       applySpinnerLook();
     }
+    if (window.__zcodeBeautify.loadKey !== LOAD) {
+      window.__zcodeBeautify.loadKey = LOAD;
+      applyLoadLook();
+    }
+    if (window.__zcodeBeautify.listKey !== LIST) {
+      window.__zcodeBeautify.listKey = LIST;
+      window.__zcodeBeautify.listStamp = LIST_VER;
+      applyListPaging();
+    }
     return;
   }
 
@@ -7608,6 +7661,7 @@ function buildBootstrapScript(payload) {
       && window.__zcodeBeautify.vol === VOL
       && window.__zcodeBeautify.bubbleKey === BUBBLE
       && window.__zcodeBeautify.spinnerKey === SPIN
+      && window.__zcodeBeautify.loadKey === LOAD
       && document.getElementById(MARKER + '-style');
     window.__zcodeBeautify.chatKey = CHAT;
     applyChatLook();
@@ -7625,6 +7679,7 @@ function buildBootstrapScript(payload) {
       && window.__zcodeBeautify.vol === VOL
       && window.__zcodeBeautify.chatKey === CHAT
       && window.__zcodeBeautify.spinnerKey === SPIN
+      && window.__zcodeBeautify.loadKey === LOAD
       && document.getElementById(MARKER + '-style');
     window.__zcodeBeautify.bubbleKey = BUBBLE;
     applyBubbleLook();
@@ -7643,10 +7698,49 @@ function buildBootstrapScript(payload) {
       && window.__zcodeBeautify.vol === VOL
       && window.__zcodeBeautify.chatKey === CHAT
       && window.__zcodeBeautify.bubbleKey === BUBBLE
+      && window.__zcodeBeautify.loadKey === LOAD
       && document.getElementById(MARKER + '-style');
     window.__zcodeBeautify.spinnerKey = SPIN;
     applySpinnerLook();
     if (spinnerOnly) return;
+  }
+
+  // Chat-load fast path (\u4F1A\u8BDD\u5E95\u90E8\u52A0\u8F7D\u56FE\u6807): same shape as the spinner \u2014 its
+  // rules live in their own style element, swapping the icon must not replay
+  // the wallpaper transition.
+  if (window.__zcodeBeautify.loadKey !== LOAD) {
+    var loadOnly = window.__zcodeBeautify.cssText === ${JSON.stringify(payload.css)}
+      && window.__zcodeBeautify.videoSrc === VIDEO_SRC
+      && window.__zcodeBeautify.wpImg === WP_IMG
+      && window.__zcodeBeautify.kb === ${JSON.stringify(Boolean(payload.kenBurns))}
+      && window.__zcodeBeautify.vol === VOL
+      && window.__zcodeBeautify.chatKey === CHAT
+      && window.__zcodeBeautify.bubbleKey === BUBBLE
+      && window.__zcodeBeautify.spinnerKey === SPIN
+      && document.getElementById(MARKER + '-style');
+    window.__zcodeBeautify.loadKey = LOAD;
+    applyLoadLook();
+    if (loadOnly) return;
+  }
+
+  // List-paging fast path (\u4F1A\u8BDD\u5217\u8868\u5206\u9875): the paging state machine lives in
+  // its own observer + per-container attrs, so re-counting rows must not
+  // replay the wallpaper transition either.
+  if (window.__zcodeBeautify.listKey !== LIST) {
+    var listOnly = window.__zcodeBeautify.cssText === ${JSON.stringify(payload.css)}
+      && window.__zcodeBeautify.videoSrc === VIDEO_SRC
+      && window.__zcodeBeautify.wpImg === WP_IMG
+      && window.__zcodeBeautify.kb === ${JSON.stringify(Boolean(payload.kenBurns))}
+      && window.__zcodeBeautify.vol === VOL
+      && window.__zcodeBeautify.chatKey === CHAT
+      && window.__zcodeBeautify.bubbleKey === BUBBLE
+      && window.__zcodeBeautify.spinnerKey === SPIN
+      && window.__zcodeBeautify.loadKey === LOAD
+      && document.getElementById(MARKER + '-style');
+    window.__zcodeBeautify.listKey = LIST;
+    window.__zcodeBeautify.listStamp = LIST_VER;
+    applyListPaging();
+    if (listOnly) return;
   }
 
   // State alone is not proof the DOM work succeeded: an earlier run may have
@@ -7655,7 +7749,7 @@ function buildBootstrapScript(payload) {
   // no-op and the page would never heal. kb participates too: toggling Ken
   // Burns alone changes no CSS, and without it the toggle would early-return
   // before applyKb ever runs.
-  if (window.__zcodeBeautify.cssText === ${JSON.stringify(payload.css)} && window.__zcodeBeautify.videoSrc === VIDEO_SRC && window.__zcodeBeautify.wpImg === WP_IMG && window.__zcodeBeautify.kb === ${JSON.stringify(Boolean(payload.kenBurns))} && window.__zcodeBeautify.vol === VOL && window.__zcodeBeautify.chatKey === CHAT && window.__zcodeBeautify.bubbleKey === BUBBLE && window.__zcodeBeautify.spinnerKey === SPIN && document.getElementById(MARKER + '-style')) return;
+  if (window.__zcodeBeautify.cssText === ${JSON.stringify(payload.css)} && window.__zcodeBeautify.videoSrc === VIDEO_SRC && window.__zcodeBeautify.wpImg === WP_IMG && window.__zcodeBeautify.kb === ${JSON.stringify(Boolean(payload.kenBurns))} && window.__zcodeBeautify.vol === VOL && window.__zcodeBeautify.chatKey === CHAT && window.__zcodeBeautify.bubbleKey === BUBBLE && window.__zcodeBeautify.spinnerKey === SPIN && window.__zcodeBeautify.loadKey === LOAD && window.__zcodeBeautify.listKey === LIST && window.__zcodeBeautify.listStamp === LIST_VER && PREV_API === PREVIEW_API && document.getElementById(MARKER + '-style')) return;
   window.__zcodeBeautify.cssText = ${JSON.stringify(payload.css)};
   window.__zcodeBeautify.videoSrc = VIDEO_SRC;
   window.__zcodeBeautify.wpImg = WP_IMG;
@@ -7931,6 +8025,11 @@ function buildBootstrapScript(payload) {
   applyBubbleLook();
   window.__zcodeBeautify.spinnerKey = SPIN;
   applySpinnerLook();
+  window.__zcodeBeautify.loadKey = LOAD;
+  applyLoadLook();
+  window.__zcodeBeautify.listKey = LIST;
+  window.__zcodeBeautify.listStamp = LIST_VER;
+  applyListPaging();
 
   function applyChatLook() {
     if (typeof CHAT_UI !== 'undefined' && !CHAT_UI) return;
@@ -7954,11 +8053,34 @@ function buildBootstrapScript(payload) {
     var perfOn = Number(C.perfSmooth) === 1;
     var decOn = Number(C.hideElapsedDecimal) === 1;
     var dragOn = Number(C.dragResize) === 1;
+    // \u4F1A\u8BDD\u6982\u89C8\u60AC\u505C\u5361: needs the serve endpoint; without it the toggle is a
+    // no-op (nothing mounts, the native hover card stays).
+    var hoverOn = Number(C.sessionHover) === 1 && typeof PREVIEW_API === 'string' && PREVIEW_API.length > 0;
+    // \u4F1A\u8BDD\u6982\u89C8 two dials, published to SLOTS so every listener generation
+    // (including stale closures from older bootstrap registrations) reads the
+    // CURRENT config at event/fill time \u2014 same pattern as previewApi.
+    //   hoverSide: 0 = the LEFT task-list rows stop opening the card (the
+    //              sidebar keeps ZCode's own workspace hover card).
+    //   hoverMax:  visible-row cap; excess prompts live in the scroll area.
+    if (window.__zcodeBeautify) {
+      window.__zcodeBeautify.hoverSide = Number(C.sessionHoverSide) === 0 ? 0 : 1;
+      var hm = Math.round(Number(C.sessionHoverMax));
+      window.__zcodeBeautify.hoverMax = Number.isFinite(hm) && hm >= 1 ? Math.min(60, hm) : 10;
+    }
+    // \u8F93\u5165\u6846\u900F\u660E\u5EA6: T is the composer background's transparency in %. The
+    // token's OWN alpha is REPLACED by the slider's (rgb(from \u2026 r g b) strips
+    // it, then color-mix scales toward transparent) \u2014 ZCode 3.18 ships
+    // --color-input at .5 alpha natively and the wallpaper bridge keeps that,
+    // so "0 = native" read as still-half-transparent; the slider is now the
+    // single source of truth: 0 = solid, 100 = invisible, 50 \u2248 the stock look.
+    var fade = Math.max(0, Math.min(100, Math.round(Number(C.composerFade) >= 0 && Number(C.composerFade) <= 100 ? Number(C.composerFade) : 50)));
     var st = document.getElementById(MARKER + '-chatlook-style');
     var fr = document.getElementById(MARKER + '-frost');
     var zm = document.getElementById(MARKER + '-zonemask');
+    // Feature teardown \u2014 but NOT of the style element itself: the composer
+    // fade rule is always-on (its 50 default reproduces the stock look), so
+    // the style stays mounted and the flow falls through to rewrite it.
     if (!masksOn && !widthOn && !perfOn && !decOn && !dragOn) {
-      if (st) st.remove();
       if (fr) fr.remove();
       if (zm) zm.remove();
       if (window.__zcodeBeautify.chatObs) {
@@ -7970,15 +8092,16 @@ function buildBootstrapScript(payload) {
         window.__zcodeBeautify.elapsedObs = null;
       }
       zbGripClean();
-      return;
     }
+    if (!hoverOn) zbHoverClean();
     if (!st) {
       st = document.createElement('style');
       st.id = MARKER + '-chatlook-style';
       (document.head || document.documentElement).appendChild(st);
     }
     st.textContent = ':root{--zb-chat-dim:' + (C.chatDim / 100) + ';--zb-mask-top:' + (C.maskTop / 100)
-      + ';--zb-mask-bot:' + (C.maskBottom / 100) + ';--zb-frost:' + (C.frost / 100) + '}'
+      + ';--zb-mask-bot:' + (C.maskBottom / 100) + ';--zb-frost:' + (C.frost / 100)
+      + ';--zb-composer-fade:' + fade + '}'
       + (masksOn
         ? '#' + MARKER + '-frost{position:fixed;inset:0;z-index:-2147483645;pointer-events:none;background:rgb(255 255 255 / var(--zb-frost))}'
           + '#' + MARKER + '-zonemask{position:fixed;inset:0;z-index:-2147483644;pointer-events:none;'
@@ -7987,6 +8110,17 @@ function buildBootstrapScript(payload) {
           // classes; .zb-chat-col is the version-proof fallback (markChatCol).
           + 'div[class*="scrollbar-gutter:stable"][class*="overflow-y-auto"],.zb-chat-col'
           + '{background-color:rgb(0 0 0 / var(--zb-chat-dim)) !important}'
+        : '')
+      + (fade >= 0
+        // \u8F93\u5165\u6846\u900F\u660E\u5EA6: [data-composer-layout] is the composer's painted box
+        // (bg-input \u2192 var(--color-input), 3.18). rgb(from \u2026 r g b / 1) takes
+        // the token's COLOR but FORCES alpha 1 \u2014 the omitted-alpha form would
+        // keep the token's own .5 (spec: alpha defaults to the origin's) and
+        // every level would read half-transparent. color-mix then applies
+        // exactly the slider's transparency. The focus ring / border are
+        // separate tokens and stay untouched. The var indirection gives the
+        // panel's slider an instant inline-var preview (same as the masks).
+        ? '[data-composer-layout]{background-color:color-mix(in srgb, rgb(from var(--color-input, rgba(128,128,128,.35)) r g b / 1) calc(100% - var(--zb-composer-fade, 50)*1%), transparent) !important}'
         : '')
       + (widthOn && !dragOn
         // Mirrors ZCode's own tiers against the "conversation" container so
@@ -8189,6 +8323,469 @@ function buildBootstrapScript(payload) {
     } else {
       zbGripClean();
     }
+    // \u4F1A\u8BDD\u6982\u89C8\u60AC\u505C\u5361: idempotent mount/unmount riding the chat-look push.
+    zbHoverApply(hoverOn);
+  }
+
+  // --- \u4F1A\u8BDD\u6982\u89C8\u60AC\u505C\u5361 (session hover preview) ---------------------------------
+  // TWO anchors open the card after a 300ms hover:
+  //   \xB7 sidebar session rows  \u2014 [data-testid^="task-item-"] (both renderers)
+  //   \xB7 conversation turn ticks \u2014 [data-testid^="v4-turn-navigator-item-"],
+  //     the \u5BF9\u8BDD\u6982\u8981\u6807\u793A strip at the conversation's left edge; a tick shows
+  //     the OPEN conversation's list (resolved via the sidebar's selected row)
+  // Card look follows the user's reference image: a HEADLESS flat dark panel
+  // holding nothing but the session's real user prompts as left-aligned
+  // single-line rows (ZCode's list is on the LEFT, so the content faces the
+  // list: dash-led lines flush left, long ones ellipsized at the right end),
+  // the newest row bold + near-white.
+  // While mounted, ZCode's own hover cards for both surfaces are hidden
+  // ([data-testid="task-row-details"] workspace info + the per-turn
+  // v4-turn-navigator-tooltip preview); turning the feature off restores
+  // them. Prompt data comes from the serve daemon's /api/session-preview
+  // (ZCode's local session db). All timing is setTimeout-based: rAF throttles
+  // to zero in occluded renderers (measured \u2014 see the grip sync note) and
+  // would swallow the open delay entirely. Prompt text is user data \u2014 every
+  // node is built through textContent, never innerHTML.
+  function zbHoverRow(el) {
+    if (!el || el.nodeType !== 1 || !el.closest) return null;
+    var hit = el.closest('[data-testid^="task-item-"],[data-testid^="v4-turn-navigator-item-"]');
+    if (!hit) return null;
+    // sessionHoverSide=0 (\u8BBE\u7F6E: \u4FA7\u680F\u6807\u9898\u4E0D\u5F39\u5361): the LEFT task-list rows are
+    // not anchors \u2014 only the conversation's turn ticks keep opening the card.
+    // Read the SLOT, not a closure var: older listener generations must see
+    // the current config too.
+    if ((hit.getAttribute('data-testid') || '').indexOf('task-item-') === 0
+        && window.__zcodeBeautify && window.__zcodeBeautify.hoverSide === 0) return null;
+    return hit;
+  }
+  function zbHoverSessionId(anchor) {
+    var tid = anchor && anchor.getAttribute('data-testid') || '';
+    if (tid.indexOf('task-item-') === 0) return tid.slice('task-item-'.length);
+    if (tid.indexOf('v4-turn-navigator-item-') === 0) {
+      // The tick belongs to the OPEN conversation; its testid carries a
+      // message row id, not a session id \u2014 resolve through the sidebar's
+      // selected row (bg-selected), falling back to the running one.
+      var run = document.querySelector('[data-testid^="task-item-"] .animate-spin');
+      var act = document.querySelector('[data-testid^="task-item-"].bg-selected')
+        || (run && run.closest ? run.closest('[data-testid^="task-item-"]') : null);
+      if (!act) return '';
+      var atid = act.getAttribute('data-testid') || '';
+      return atid.indexOf('task-item-') === 0 ? atid.slice('task-item-'.length) : '';
+    }
+    return '';
+  }
+  function zbHoverCardEl() {
+    return document.getElementById(MARKER + '-hover-card');
+  }
+  function zbHoverClose() {
+    clearTimeout(zbHoverCloseTimer);
+    var card = zbHoverCardEl();
+    if (card) card.remove();
+    zbHoverCur = '';
+    zbHoverPend = '';
+    zbHoverRowEl = null;
+  }
+  function zbHoverScheduleClose() {
+    clearTimeout(zbHoverTimer);
+    zbHoverPend = '';
+    clearTimeout(zbHoverCloseTimer);
+    // Grace window: crossing the gap row \u2192 card must not blink it away.
+    zbHoverCloseTimer = setTimeout(zbHoverClose, 180);
+  }
+  function zbHoverOver(e) {
+    var card = zbHoverCardEl();
+    if (card && card.contains(e.target)) { clearTimeout(zbHoverCloseTimer); return; }
+    var row = zbHoverRow(e.target);
+    if (!row) return;
+    var id = zbHoverSessionId(row);
+    if (!id) return;
+    clearTimeout(zbHoverCloseTimer);
+    if (zbHoverCur === id && card) return;
+    // mouseover also fires when crossing INTO nested children of the row \u2014
+    // the pending delay tracks the session, not the element, so crossing
+    // children never restarts the 300ms timer from zero.
+    if (zbHoverPend === id) return;
+    clearTimeout(zbHoverTimer);
+    zbHoverPend = id;
+    zbHoverRowEl = row;
+    var hrc = row.getBoundingClientRect();
+    zbHoverRectTop = hrc.top; zbHoverRectLeft = hrc.left;
+    zbHoverTimer = setTimeout(function() { zbHoverPend = ''; zbHoverOpen(row, id); }, 300);
+  }
+  function zbHoverOut(e) {
+    var card = zbHoverCardEl();
+    if (card && card.contains(e.target)) {
+      // leaving the card: close unless the pointer moved onto the row/card gap
+      if (card.contains(e.relatedTarget)) return;
+      zbHoverScheduleClose();
+      return;
+    }
+    var row = zbHoverRow(e.target);
+    if (!row) return;
+    if (zbHoverRow(e.relatedTarget) === row) return; // still inside the row
+    if (card && card.contains(e.relatedTarget)) return; // onto the card
+    zbHoverScheduleClose();
+  }
+  function zbHoverData(id, cb) {
+    var hit = zbHoverCache[id];
+    if (hit && Date.now() - hit.at < 15000) return cb(hit.data);
+    // Read the SLOT, not the closure var: this listener may belong to an
+    // earlier bootstrap generation, and the slot always carries the newest
+    // endpoint/token (see the PREVIEW_API note at the top of the body).
+    var api = (window.__zcodeBeautify && window.__zcodeBeautify.previewApi) || PREVIEW_API;
+    if (!api) return cb(null);
+    var sep = api.indexOf('?') >= 0 ? '&' : '?';
+    fetch(api + sep + 'session=' + encodeURIComponent(id), { cache: 'no-store' })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(j) {
+        var data = j && j.ok === true ? j : null;
+        if (data) zbHoverCache[id] = { at: Date.now(), data: data };
+        cb(data);
+      })
+      .catch(function() { cb(null); });
+  }
+  function zbHoverText(t) {
+    return String(t == null ? '' : t).replace(/\\s+/g, ' ').trim();
+  }
+  function zbHoverFill(card, id, row) {
+    var list = card.querySelector('.' + MARKER + '-hov-list');
+    if (!list) return;
+    zbHoverData(id, function(data) {
+      if (zbHoverCur !== id) return; // switched rows / closed meanwhile
+      list.textContent = '';
+      // re-seat the sliding indicator (the wipe above detached it)
+      var ind2 = document.createElement('div');
+      ind2.id = MARKER + '-hover-ind';
+      list.appendChild(ind2);
+      if (!data) {
+        // serve down / token stale / db unreadable: still useful \u2014 the row's
+        // marquee carries the FULL untruncated title (tick anchors fall back
+        // to the selected sidebar row's marquee).
+        var fbSrc = (row.querySelector('[data-task-title-copy="original"]') || {}).textContent
+          || (document.querySelector('[data-testid^="task-item-"].bg-selected [data-task-title-copy="original"]') || {}).textContent
+          || '';
+        if (fbSrc) {
+          var fb = document.createElement('div');
+          fb.className = MARKER + '-hov-row';
+          fb.textContent = zbHoverText(fbSrc);
+          list.appendChild(fb);
+        }
+        var hint = document.createElement('div');
+        hint.className = MARKER + '-hov-hint';
+        hint.textContent = '\u4F1A\u8BDD\u6982\u89C8\u670D\u52A1\u4E0D\u53EF\u7528(\u7F8E\u5316\u670D\u52A1\u672A\u8FD0\u884C)' + (fbSrc ? ',\u4EC5\u663E\u793A\u5B8C\u6574\u6807\u9898' : '');
+        list.appendChild(hint);
+        return;
+      }
+      var ps = data.prompts || [];
+      if (!ps.length) {
+        var empty = document.createElement('div');
+        empty.className = MARKER + '-hov-hint';
+        empty.textContent = '(\u8FD8\u6CA1\u6709\u7528\u6237\u63D0\u95EE)';
+        list.appendChild(empty);
+        return;
+      }
+      // \u6700\u591A\u663E\u793A\u884C\u6570 (sessionHoverMax): the card lists EXACTLY the newest N
+      // prompts \u2014 a short, naturally-ending list (reference design), not a
+      // tall scroll area carrying the whole history. Older prompts are simply
+      // not listed; the CSS max-height below stays only as a viewport guard
+      // for very large N.
+      var cap = window.__zcodeBeautify ? Number(window.__zcodeBeautify.hoverMax) : NaN;
+      cap = Number.isFinite(cap) && cap >= 1 ? Math.min(60, Math.round(cap)) : 10;
+      if (ps.length > cap) ps = ps.slice(ps.length - cap);
+      for (var i = 0; i < ps.length; i++) {
+        var r = document.createElement('div');
+        r.className = MARKER + '-hov-row' + (i === ps.length - 1 ? ' ' + MARKER + '-hov-last' : '');
+        r.textContent = zbHoverText(ps[i].text);
+        if (ps[i].mid) r.setAttribute('data-mid', ps[i].mid);
+        list.appendChild(r);
+      }
+      // Newest sits at the bottom (image spec) \u2014 land the scroll there
+      // (only relevant when a very large N overflows the CSS max-height).
+      list.scrollTop = list.scrollHeight;
+    });
+  }
+  // Place the card beside the anchor rect: to its right, flipping left when
+  // the window runs out of room, clamped into the viewport. Shared by the
+  // open path and the scroll-follow reposition.
+  function zbHoverPlace(card, rc) {
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var cw = card.offsetWidth || 420, ch = card.offsetHeight || 200;
+    var left = rc.right + 8;
+    if (left + cw > vw - 8) left = Math.max(8, rc.left - cw - 8);
+    var top = rc.top - 6;
+    if (top + ch > vh - 8) top = Math.max(8, vh - 8 - ch);
+    card.style.left = Math.round(left) + 'px';
+    card.style.top = Math.round(top) + 'px';
+  }
+  function zbHoverOpen(row, id) {
+    var rc = row.getBoundingClientRect();
+    if (rc.width === 0 && rc.height === 0) return; // recycled/virtualized away
+    zbHoverClose();
+    // Anchor the moved-check at the CURRENT rect (the schedule-time snapshot
+    // may predate a tiny layout drift; only real movement should close).
+    zbHoverRowEl = row;
+    zbHoverRectTop = rc.top; zbHoverRectLeft = rc.left;
+    var card = document.createElement('div');
+    card.id = MARKER + '-hover-card';
+    card.setAttribute('role', 'tooltip');
+    // Reference design: a HEADLESS card \u2014 no title row, no meta line, just
+    // the right-aligned prompt list (the hovered row itself names the session).
+    var list = document.createElement('div');
+    list.className = MARKER + '-hov-list';
+    card.appendChild(list);
+    var loading = document.createElement('div');
+    loading.className = MARKER + '-hov-hint';
+    loading.textContent = '\u6B63\u5728\u8BFB\u53D6\u4F1A\u8BDD\u2026';
+    list.appendChild(loading);
+    // Sliding hover indicator (see the CSS block): one bar under the row the
+    // pointer is on, top animating between rows as the pointer crosses them.
+    // It lives INSIDE the scrolling list (positions via row offsetTop) and is
+    // re-created by the fill passes (their textContent wipe detaches it);
+    // the listeners ride the list element itself, which survives the wipes.
+    var ind = document.createElement('div');
+    ind.id = MARKER + '-hover-ind';
+    list.appendChild(ind);
+    list.addEventListener('mouseover', function(e2) {
+      var rr = e2.target && e2.target.closest ? e2.target.closest('.' + MARKER + '-hov-row') : null;
+      var bar = document.getElementById(MARKER + '-hover-ind');
+      if (!bar) return;
+      if (!rr) { bar.style.opacity = '0'; return; }
+      bar.style.top = (rr.offsetTop + rr.offsetHeight - 2) + 'px';
+      bar.style.opacity = '1';
+    });
+    list.addEventListener('mouseleave', function() {
+      var bar = document.getElementById(MARKER + '-hover-ind');
+      if (bar) bar.style.opacity = '0';
+    });
+    // Click-to-jump (reference behavior): clicking a prompt row lands ON that
+    // prompt \u2014 not just on the session's tail \u2014 and the card STAYS OPEN (the
+    // user asked for it: keep reading / clicking other prompts after a jump;
+    // the card still closes via the normal paths \u2014 pointer leaves it, Esc,
+    // click elsewhere). ZCode's turn-navigator tick for a user message carries
+    // that message's id on data-turn-id, and the tick is itself a native
+    // button that scrolls the conversation to its turn; clicking the tick is
+    // the whole mechanism. For the OPEN conversation (tick anchor / selected
+    // row) that click is immediate; a DIFFERENT session opens first (sidebar
+    // row's native click \u2192 onSelectTask) and a short poll lands on the turn
+    // once its strip mounts. Delegated on the card so re-fills need no
+    // rebinding; hint rows carry no -hov-row and stay inert. Both ids are
+    // re-whitelisted before entering a selector.
+    card.addEventListener('click', function(e) {
+      var hit = e.target && e.target.closest ? e.target.closest('.' + MARKER + '-hov-row') : null;
+      if (!hit) return;
+      var mid = hit.getAttribute('data-mid') || '';
+      if (!/^[A-Za-z0-9_-]{6,96}$/.test(id)) return;
+      if (!/^msg_[A-Za-z0-9_-]{1,120}$/.test(mid)) mid = '';
+      var tickOf = function() {
+        return mid ? document.querySelector('[data-turn-id="' + mid + '"]') : null;
+      };
+      var sel = document.querySelector('[data-testid^="task-item-"].bg-selected');
+      if (sel && (sel.getAttribute('data-testid') || '') === 'task-item-' + id) {
+        var tk = tickOf();
+        if (tk) tk.click();
+        return;
+      }
+      var rowEl = document.querySelector('[data-testid="task-item-' + id + '"]');
+      if (rowEl) rowEl.click();
+      if (mid) {
+        // Landing self-heal: a freshly-opened session's virtualizer mounts
+        // with ESTIMATED row heights; the first tick click (scrollToIndex)
+        // can therefore land the viewport off the mounted window \u2014 a blank
+        // conversation (measured live: scrollHeight re-measured 2326\u21925942
+        // only BECAUSE of the jump). So: click only once content rows are
+        // mounted, then VERIFY rows are actually in the viewport; while not,
+        // re-click the tick \u2014 the second scrollToIndex runs against real
+        // measurements and lands correctly. Max 3 clicks, ~12s ceiling.
+        var landed = function() {
+          var ok = false;
+          var vh = window.innerHeight;
+          document.querySelectorAll('[data-row-id]').forEach(function(rr) {
+            var b = rr.getBoundingClientRect();
+            // small margins only \u2014 enough to tell "a row intersects the
+            // viewport" from "landed off the mounted window (\xB1thousands px)"
+            if (b.top < vh - 24 && b.bottom > 24) ok = true;
+          });
+          return ok;
+        };
+        var tries = 0, clicked = 0;
+        var timer = setInterval(function() {
+          tries++;
+          var tk2 = tickOf();
+          var sc = document.querySelector('.zb-chat-col,div[class*="scrollbar-gutter:stable"]');
+          var mounted = sc && sc.querySelector('[data-row-id]');
+          if (!tk2 || !mounted) {
+            if (tries > 24) clearInterval(timer); // strip/content never came
+            return;
+          }
+          if (clicked > 0 && landed()) {
+            // Stay ARMED for ~10s after landing: ZCode's scroll-memory
+            // restore can fire very late (~8s live-measured on a big
+            // session) and clobber the jump with a stale saved position,
+            // re-blanking the viewport. Only leave the loop once the landing
+            // has held past that window. (clicked > 0 \u2014 the jump itself must
+            // happen even when the restore already left content visible.)
+            if (tries >= 20) clearInterval(timer);
+            return;
+          }
+          if (clicked >= 4 || tries > 24) { clearInterval(timer); return; }
+          tk2.click();
+          clicked++;
+        }, 500);
+      }
+    });
+    // Measure invisibly first (the CSS max-height caps it), then place.
+    card.style.visibility = 'hidden';
+    document.documentElement.appendChild(card);
+    zbHoverPlace(card, rc);
+    card.style.visibility = '';
+    zbHoverCur = id;
+    zbHoverFill(card, id, row);
+  }
+  function zbHoverOnKey(e) {
+    if (e.key === 'Escape') { clearTimeout(zbHoverTimer); zbHoverClose(); }
+  }
+  function zbHoverOnDown(e) {
+    var card = zbHoverCardEl();
+    if (card && card.contains(e.target)) return;
+    clearTimeout(zbHoverTimer);
+    zbHoverClose();
+  }
+  function zbHoverOnScroll(e) {
+    var card = zbHoverCardEl();
+    if (card && card.contains(e.target)) return; // scrolling the card's own list
+    if (!zbHoverRowEl) return; // nothing pending/open
+    // A jump keeps the card OPEN; if its anchor row got recycled by the
+    // post-open re-render (detached \u2014 rect all zeros), following it would
+    // fling the card to the viewport corner. A dead anchor closes instead.
+    if (!zbHoverRowEl.isConnected) { zbHoverClose(); return; }
+    // Streaming sessions fire scroll STORMS from scrollers that never
+    // actually move \u2014 measured live: the sidebar list's own overflow layer
+    // emitted 47 scroll events in 12s (scrollTop pinned at 0) while a
+    // session streamed, killing every hover attempt. Only a scroll that
+    // MOVES the anchor matters: while OPEN the card follows the anchor
+    // (native-popper behaviour \u2014 turn ticks scroll with streaming content);
+    // while still PENDING a moved anchor means the user is scrolling, so
+    // the open is cancelled.
+    var rc = zbHoverRowEl.getBoundingClientRect();
+    var moved = Math.abs(rc.top - zbHoverRectTop) >= 2 || Math.abs(rc.left - zbHoverRectLeft) >= 2;
+    if (!moved) return;
+    if (card) {
+      zbHoverPlace(card, rc);
+      zbHoverRectTop = rc.top; zbHoverRectLeft = rc.left;
+      return;
+    }
+    clearTimeout(zbHoverTimer);
+    zbHoverPend = '';
+    zbHoverRowEl = null;
+  }
+  function zbHoverUnbind() {
+    var s = window.__zcodeBeautify;
+    if (s && s.hoverListeners) {
+      document.removeEventListener('mouseover', s.hoverListeners[0], true);
+      document.removeEventListener('mouseout', s.hoverListeners[1], true);
+      document.removeEventListener('keydown', s.hoverListeners[2], true);
+      document.removeEventListener('pointerdown', s.hoverListeners[3], true);
+      document.removeEventListener('scroll', s.hoverListeners[4], true);
+      s.hoverListeners = null;
+    }
+  }
+  function zbHoverClean() {
+    zbHoverUnbind();
+    var s = window.__zcodeBeautify;
+    if (s) s.hoverTeardown = null;
+    var st = document.getElementById(MARKER + '-hover-style');
+    if (st) st.remove();
+    var card = zbHoverCardEl();
+    if (card) card.remove();
+    clearTimeout(zbHoverTimer);
+    clearTimeout(zbHoverCloseTimer);
+    zbHoverCur = '';
+    zbHoverCache = {};
+  }
+  function zbHoverApply(on) {
+    var s = window.__zcodeBeautify;
+    // Generation hand-off (same trap as the grip strips): every evaluation of
+    // this bootstrap \u2014 a fresh injection AND every replay of older
+    // addScriptToEvaluateOnNewDocument registrations after a reload \u2014 carries
+    // its own closure with its own PREVIEW_API. The LAST evaluation to run
+    // must own the hover bindings; an earlier closure left behind would keep
+    // answering hovers with a STALE token (401 forever after a serve
+    // restart). Evict any foreign binding, then (re)bind this closure's.
+    if (s.hoverTeardown && s.hoverTeardown !== zbHoverClean) {
+      try { s.hoverTeardown(); } catch (e) {}
+    }
+    if (!on) { zbHoverClean(); return; }
+    var st = document.getElementById(MARKER + '-hover-style');
+    if (!st) {
+      st = document.createElement('style');
+      st.id = MARKER + '-hover-style';
+      (document.head || document.documentElement).appendChild(st);
+    }
+    // Card paint per the user's reference: a flat, near-black, borderless
+    // panel with a big radius. It still RIDES ZCode's popover tokens (a Monet
+    // re-theme restyles it) but color-mix pulls them 16% toward near-black so
+    // the card stays dark and quiet even under a light theme.
+    // task-row-details is the SIDEBAR rows' own native workspace card \u2014 hide
+    // it only while OUR card answers sidebar hovers (sessionHoverSide=1);
+    // with the side anchor off, the sidebar keeps ZCode's stock hover card.
+    var sideOn = !(window.__zcodeBeautify && window.__zcodeBeautify.hoverSide === 0);
+    st.textContent = ''
+      + (sideOn ? '[data-testid="task-row-details"]{display:none!important}' : '')
+      + '[data-testid^="v4-turn-navigator-tooltip-"]{display:none!important}'
+      + '#' + MARKER + '-hover-card{position:fixed;z-index:60;width:420px;max-width:calc(100vw - 16px);'
+      + 'background:color-mix(in srgb,var(--color-menu,var(--color-popover,#1e1e27)) 84%,#06060a);'
+      + 'color:var(--color-popover-foreground,#e7e7ee);'
+      + 'border-radius:16px;box-shadow:0 14px 40px rgba(0,0,0,.5);'
+      + 'font-size:12.5px;line-height:1.55;padding:12px 0;pointer-events:auto;'
+      + 'animation:' + MARKER + '-hov-in .16s ease-out}'
+      + '@keyframes ' + MARKER + '-hov-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}'
+      + '.' + MARKER + '-hov-list{max-height:min(56vh,470px);overflow-y:auto;padding:2px 20px 4px;position:relative}'
+      + '.' + MARKER + '-hov-list::-webkit-scrollbar{width:8px}'
+      + '.' + MARKER + '-hov-list::-webkit-scrollbar-thumb{background:rgba(127,127,127,.3);border-radius:4px;'
+      + 'border:2px solid transparent;background-clip:content-box}'
+      // Rows face the LIST side, mirroring the reference app (its list sits
+      // on the RIGHT, so its rows hug the card's right edge). ZCode's list is
+      // on the LEFT: rows hug the left \u2014 text flush left with the small gray
+      // dash leading the line, overflowing ones cutting with an ellipsis at
+      // the right end.
+      + '.' + MARKER + '-hov-row{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;'
+      + 'padding:4px 2px 4px 18px;position:relative;color:var(--color-foreground-subtle,#a4a4b0);'
+      + 'cursor:pointer;transition:color .12s ease-out}'
+      // Hover motion per the reference: no background slab \u2014 the row's text
+      // brightens AND a short underline indicator slides under it (see the
+      // -hover-ind rule below), while the session's CURRENT row keeps a
+      // LONGER permanent underline (the reference's hovered bar is shorter
+      // than the current one's).
+      + '.' + MARKER + '-hov-row:hover{color:var(--color-foreground,#f4f4f8)}'
+      + '.' + MARKER + '-hov-row::before{content:"\u2013";position:absolute;left:0;top:4px;color:rgba(127,127,142,.55)}'
+      + '.' + MARKER + '-hov-last{font-weight:700;color:var(--color-foreground,#f7f7fb)}'
+      + '.' + MARKER + '-hov-last::before{color:rgba(200,200,214,.7)}'
+      // the CURRENT row's long indicator \u2014 full content width
+      + '.' + MARKER + '-hov-last::after{content:"";position:absolute;left:18px;right:2px;bottom:2px;'
+      + 'height:1.5px;background:rgba(200,200,214,.4);border-radius:1px}'
+      // the sliding HOVER indicator \u2014 shorter than the current row's bar,
+      // transitions its top as the pointer crosses rows (the "motion")
+      + '#' + MARKER + '-hover-ind{position:absolute;left:20px;width:78%;height:1.5px;'
+      + 'background:var(--color-foreground,#e9e9f0);border-radius:1px;opacity:0;pointer-events:none;'
+      + 'transition:top .14s ease-out,width .14s ease-out,opacity .12s ease-out}'
+      + '.' + MARKER + '-hov-hint{padding:5px 2px 3px 18px;text-align:left;font-size:11.5px;'
+      + 'color:var(--color-foreground-subtle,#8a8a96)}';
+    // NOTE: deliberately NO prefers-reduced-motion opt-out here. Measured on
+    // the user's machine: the OS ships animations OFF (the media query
+    // matches), and honoring it silently swallowed every motion this card
+    // ships \u2014 the user asked for these effects explicitly. They are tiny
+    // (\u2264160ms fades/slides on a hover overlay), so they stay unconditional.
+    if (s.hoverTeardown === zbHoverClean) return; // this closure already owns the page
+    // CAPTURE phase throughout: ZCode's React root sits between the sidebar
+    // and document and can stopPropagation on bubbled mouseover/mouseout \u2014
+    // capture runs top-down and cannot be cut off by anything below document.
+    document.addEventListener('mouseover', zbHoverOver, true);
+    document.addEventListener('mouseout', zbHoverOut, true);
+    document.addEventListener('keydown', zbHoverOnKey, true);
+    document.addEventListener('pointerdown', zbHoverOnDown, true);
+    document.addEventListener('scroll', zbHoverOnScroll, true);
+    s.hoverTeardown = zbHoverClean;
+    s.hoverListeners = [zbHoverOver, zbHoverOut, zbHoverOnKey, zbHoverOnDown, zbHoverOnScroll];
   }
   // The duration span is a direct child of the loading row (verified in
   // ZCode's bundle: aria-hidden + font-mono next to the zcode-loading-label).
@@ -8227,18 +8824,36 @@ function buildBootstrapScript(payload) {
   function perfApply() {
     var rows = document.querySelectorAll('.history-message, [class~="group/assistant-turn"]');
     if (!rows.length) return;
+    // v2 lifecycle (rebuilt after the 6.2.0 "unrendered stretches" bug):
+    // the old engine only ever ADDED marks \u2014 baked contain-intrinsic-size
+    // went stale on rows that keep growing while skipped, and the (3.18 v4)
+    // virtualizer reads those placeholders as real heights \u2014 the total
+    // height oscillated 8x in one scroll (86762\u219410346 px measured). Now:
+    //   \xB7 NO new marks while a turn is streaming (chat-loading present) and
+    //     the LAST row is never marked (it is where the next turn grows);
+    //   \xB7 rows returning near the viewport are unmarked, so the measurer
+    //     always sees live layout where it looks;
+    //   \xB7 marks only bake heights of STATIC rows (finished content), so the
+    //     placeholder the virtualizer reads stays the truth.
+    var streaming = !!document.querySelector('[data-testid="chat-loading"]');
     var vh = window.innerHeight || 800;
     // First read flushes any pending layout once; the rest read cached values.
     for (var i = 0; i < rows.length; i++) {
       var el = rows[i];
+      if (el.querySelector('[data-testid="chat-loading"]')) continue;
       var r = el.getBoundingClientRect();
       // Well outside the viewport (a full viewport of slack both ways).
       if (r.bottom < -vh || r.top > 2 * vh) {
-        if (el.getAttribute('data-zb-cv') !== '1') {
+        if (!streaming && i < rows.length - 1 && el.getAttribute('data-zb-cv') !== '1') {
           el.setAttribute('data-zb-cv', '1');
           el.style.containIntrinsicSize = Math.round(r.width) + 'px ' + Math.round(r.height) + 'px';
           el.style.contentVisibility = 'auto';
         }
+      } else if (el.getAttribute('data-zb-cv') === '1') {
+        // back near the viewport: drop the marker + placeholder
+        el.style.contentVisibility = '';
+        el.style.containIntrinsicSize = '';
+        el.removeAttribute('data-zb-cv');
       }
     }
   }
@@ -8659,6 +9274,366 @@ function buildBootstrapScript(payload) {
     st.textContent = css;
   }
 
+  // \u4F1A\u8BDD\u5E95\u90E8\u52A0\u8F7D\u56FE\u6807: ZCode 3.18 renders the conversation footer's status row
+  // as [data-testid="chat-loading"] with the glyph inside
+  // [data-chat-loading-icon="true"] (a brand-colored orbit svg). CSS-only
+  // swap \u2014 React re-renders this row constantly while streaming, so DOM
+  // surgery would fight the reconciler.
+  //   classic: repaint the PRE-3.18 pixel wave \u2014 nine dots in a 3\xD73 grid
+  //     (13px, 1.3px gaps), the ring pulsing clockwise (950ms cycle,
+  //     110ms per-dot stagger, order 0,1,2,5,8,7,6,3), center dot static.
+  //     Implemented as nine radial-gradient tiles; each dot's alpha rides a
+  //     @property-registered number so the wave animates without extra DOM.
+  //   image: paint the user picture over the glyph; optional CSS rotation.
+  function applyLoadLook() {
+    if (typeof CHAT_UI !== 'undefined' && !CHAT_UI) return;
+    var L;
+    try { L = JSON.parse(LOAD); } catch (e) { return; }
+    var st = document.getElementById(MARKER + '-load-style');
+    var mode = L && (L.mode === 'classic' || L.mode === 'image') ? L.mode : 'default';
+    if (mode === 'image' && !L.image) mode = 'default';
+    if (mode === 'default') {
+      if (st) st.remove();
+      var stale = document.querySelectorAll('.' + MARKER + '-ld-grid');
+      for (var si = 0; si < stale.length; si++) stale[si].remove();
+      if (window.__zcodeBeautify.loadObs) {
+        try { window.__zcodeBeautify.loadObs.disconnect(); } catch (e) {}
+        window.__zcodeBeautify.loadObs = null;
+      }
+      return;
+    }
+    if (!st) {
+      st = document.createElement('style');
+      st.id = MARKER + '-load-style';
+      (document.head || document.documentElement).appendChild(st);
+    }
+    var ICON = '[data-chat-loading-icon="true"]';
+    var size = Math.max(10, Math.min(28, Math.round(L.size || 16)));
+    var css = '';
+    // Sweep any injected pixel grids from a previous classic run first \u2014
+    // the default/image styles below must not coexist with them.
+    var grids = document.querySelectorAll('.' + MARKER + '-ld-grid');
+    for (var gi = 0; gi < grids.length; gi++) grids[gi].remove();
+    if (mode === 'classic') {
+      // Faithful port of upstream's pre-3.18 ChatLoadingPixels (zai-org/ZCode,
+      // sync a60ba6a7): a 13px 3\xD73 grid of nine rounded dots, ring order
+      // [0,1,2,5,8,7,6,3] each pulsing with a 110ms-per-step stagger (950ms
+      // cycle, ease-in-out, peak at 35% with a 1.08 scale pop, dark themes
+      // peak at full opacity), center dot static at .07. The 6.1.1 attempt
+      // faked this with @property-driven gradient layers \u2014 dots rendered dim
+      // and mushy; the real one is nine ELEMENTS animating opacity+transform,
+      // so that is what we mount (a MutationObserver re-mounts after React
+      // rebuilds the row).
+      var isDark = /(^|\\s)(dark|theme-zai-dark)(\\s|$)/.test(document.documentElement.className || '');
+      css += '.' + MARKER + '-ld-grid{display:grid!important;grid-template-columns:repeat(3,1fr)!important;'
+        + 'grid-template-rows:repeat(3,1fr)!important;gap:1.3px!important;width:13px!important;height:13px!important;'
+        + 'flex:none!important;color:var(--color-foreground,rgba(200,200,205,.9))!important}'
+      // NO !important on the dot rules: an author !important BEATS CSS
+      // animations in the cascade (and an !important animation shorthand
+      // resets animation-delay, killing the ring stagger) \u2014 the 6.1.3 dots
+      // rendered as a static dim grid because opacity:.15!important froze
+      // the keyframes out. Namespaced selectors need no boosting anyway.
+        + '.' + MARKER + '-ld-dot{width:100%;height:100%;border-radius:1px;'
+        + 'background:currentColor;opacity:.15;'
+        + 'animation:' + MARKER + '-ld-on 950ms ease-in-out infinite}'
+        + '.' + MARKER + '-ld-dot.zb-ld-center{opacity:.07;animation:none}'
+        + '@keyframes ' + MARKER + '-ld-on{0%,100%{opacity:.15;transform:scale(1)}'
+        + '35%{opacity:' + (isDark ? '1' : '.75') + ';transform:scale(1.08)}}'
+        // Ring delays: child index \u2192 ORBIT position \xD7 110ms (center = child 5).
+        + '.' + MARKER + '-ld-dot:nth-child(2){animation-delay:110ms}'
+        + '.' + MARKER + '-ld-dot:nth-child(3){animation-delay:220ms}'
+        + '.' + MARKER + '-ld-dot:nth-child(4){animation-delay:770ms}'
+        + '.' + MARKER + '-ld-dot:nth-child(6){animation-delay:330ms}'
+        + '.' + MARKER + '-ld-dot:nth-child(7){animation-delay:660ms}'
+        + '.' + MARKER + '-ld-dot:nth-child(8){animation-delay:550ms}'
+        + '.' + MARKER + '-ld-dot:nth-child(9){animation-delay:440ms}'
+        // Hide the stock 3.18 glyph; our grid is a flex child of its slot.
+        + ICON + '>*:not(.' + MARKER + '-ld-grid){display:none!important}';
+      zbLdMount();
+      if (!window.__zcodeBeautify.loadObs) {
+        var ldPend = false;
+        var ldObs = new MutationObserver(function() {
+          if (ldPend) return;
+          ldPend = true;
+          requestAnimationFrame(function() { ldPend = false; zbLdMount(); });
+        });
+        ldObs.observe(document.documentElement, { childList: true, subtree: true });
+        window.__zcodeBeautify.loadObs = ldObs;
+      }
+    } else {
+      if (window.__zcodeBeautify.loadObs) {
+        try { window.__zcodeBeautify.loadObs.disconnect(); } catch (e) {}
+        window.__zcodeBeautify.loadObs = null;
+      }
+      css += ICON + '>*{display:none!important}'
+        + ICON + '{width:' + size + 'px!important;height:' + size + 'px!important;'
+        + 'background:url("' + L.image + '") center/contain no-repeat!important}';
+      if (L.spin) {
+        css += ICON + '{animation:zb-ld-rot 1s linear infinite!important}'
+          + '@keyframes zb-ld-rot{to{transform:rotate(360deg)}}';
+      }
+    }
+    st.textContent = css;
+  }
+
+  // Mounts the classic pixel grid into every live chat-loading icon slot that
+  // does not carry one yet. Idempotent; called on every applyLoadLook pass and
+  // from the rAF-coalesced MutationObserver (React recreates the row per turn).
+  function zbLdMount() {
+    var icons = document.querySelectorAll('[data-chat-loading-icon="true"]');
+    for (var ii = 0; ii < icons.length; ii++) {
+      var host = icons[ii];
+      if (host.querySelector('.' + MARKER + '-ld-grid')) continue;
+      var g = document.createElement('span');
+      g.className = MARKER + '-ld-grid';
+      g.setAttribute('aria-hidden', 'true');
+      for (var k = 0; k < 9; k++) {
+        var d = document.createElement('i');
+        d.className = MARKER + '-ld-dot' + (k === 4 ? ' zb-ld-center' : '');
+        g.appendChild(d);
+      }
+      host.appendChild(g);
+    }
+  }
+
+  // --- \u4F1A\u8BDD\u5217\u8868\u5206\u9875 (sidebar list paging) ------------------------------------
+  // ZCode's ProjectTaskRows hardcodes the project card's session list to
+  // "first 5 rows, +5 per \u663E\u793A\u66F4\u591A click" with no way back. This re-implements
+  // the paging on top of React's own list instead of patching it: rows beyond
+  // the wanted count get an inline display:none, extra rows are render-ahead
+  // by CLICKING the native \u663E\u793A\u66F4\u591A button (the limit lives in React state \u2014
+  // clicking is the only sanctioned way to move it), and an optional \u6536\u8D77
+  // control snaps the visible window back to the initial count. The whole
+  // machine is idempotent and re-runs from a childList-only MutationObserver,
+  // so React rebuilds (mount, limit growth, row swaps) re-converge on their
+  // own. Scope: containers under [data-testid="virtual-project-tasks"] only \u2014
+  // the pinned / timeline / unread sections keep their stock behaviour.
+  function zbListRows(container) {
+    var out = [];
+    var kids = container.children;
+    for (var i = 0; i < kids.length; i++) {
+      var k = kids[i];
+      // Row wrappers are plain divs; our toolbar div carries the marker attr
+      // and the empty state ("\u8FD8\u6CA1\u6709\u4F1A\u8BDD") is never a paged row.
+      if (k.tagName === 'DIV' && !k.hasAttribute('data-zb-list-bar') && k.getAttribute('data-testid') !== 'project-no-tasks') out.push(k);
+    }
+    return out;
+  }
+
+  function zbListClean() {
+    if (window.__zcodeBeautify.listObs) {
+      try { window.__zcodeBeautify.listObs.disconnect(); } catch (e) {}
+      window.__zcodeBeautify.listObs = null;
+    }
+    var st = document.getElementById(MARKER + '-list-style');
+    if (st) st.remove();
+    var hosts = document.querySelectorAll('[data-testid="virtual-project-tasks"]');
+    for (var i = 0; i < hosts.length; i++) {
+      var bars = hosts[i].querySelectorAll('[data-zb-list-bar]');
+      for (var b = 0; b < bars.length; b++) bars[b].remove();
+      var lists = hosts[i].querySelectorAll('[data-zb-paging]');
+      for (var l = 0; l < lists.length; l++) {
+        lists[l].removeAttribute('data-zb-paging');
+        var rows = lists[l].children;
+        for (var r = 0; r < rows.length; r++) {
+          if (rows[r].style && rows[r].style.display === 'none') rows[r].style.display = '';
+        }
+      }
+    }
+  }
+
+  function applyListPaging() {
+    if (typeof CHAT_UI !== 'undefined' && !CHAT_UI) return;
+    var L;
+    try { L = JSON.parse(LIST); } catch (e) { return; }
+    var init = Math.max(0, Math.round(Number(L && L.initial) || 0));
+    if (init <= 0) { zbListClean(); return; }
+    // Publish to SLOTS, never to closures: the observer created by an earlier
+    // generation keeps firing this generation's scans (same pattern as
+    // hoverSide/hoverMax) \u2014 closures here would go stale on config edits.
+    window.__zcodeBeautify.listInit = init;
+    window.__zcodeBeautify.listStep = Math.max(1, Math.round(Number(L && L.step) || 5));
+    window.__zcodeBeautify.listCollapse = Number(L && L.collapse) === 1;
+
+    // Static rule: the native button is replaced by our toolbar row. Its
+    // element STAYS in the DOM (display:none) \u2014 render-ahead clicks it.
+    var stEl = document.getElementById(MARKER + '-list-style');
+    if (!stEl) {
+      stEl = document.createElement('style');
+      stEl.id = MARKER + '-list-style';
+      (document.head || document.documentElement).appendChild(stEl);
+    }
+    var listCss = '[data-zb-paging] > button[data-task-list-show-more]{display:none!important}';
+    if (stEl.textContent !== listCss) stEl.textContent = listCss;
+
+    // A container is the DEEPEST element whose relevant children are session
+    // rows: either it owns the native paging button directly, or every div
+    // child is a py-px row wrapper (toolbar/empty-state excluded). A fixed
+    // DEPTH would break \u2014 CollapsibleContent grows an extra animation wrapper
+    // after a collapse/expand cycle, moving the list one layer down (live:
+    // depth-3 candidates became the pl-2 wrapper, whose container child got
+    // paged as if it were a row). The "every div child is py-px" constraint
+    // also keeps the pl-2 wrapper itself out: it owns the worktree-creating
+    // py-px rows PLUS the non-py-px container div, so it never qualifies.
+    function qualifies(c) {
+      if (c.querySelector(':scope > button[data-task-list-show-more]')) return true;
+      var kids = c.children;
+      var saw = false;
+      for (var k = 0; k < kids.length; k++) {
+        var el = kids[k];
+        if (el.hasAttribute('data-zb-list-bar')) continue;
+        if (el.tagName !== 'DIV') return false;
+        if (el.getAttribute('data-testid') === 'project-no-tasks') continue;
+        if (String(el.className || '').indexOf('py-px') === -1) return false;
+        saw = true;
+      }
+      return saw;
+    }
+
+    function zbListToolbar(container, state) {
+      var native = container.querySelector(':scope > button[data-task-list-show-more]');
+      var rows = zbListRows(container);
+      // \u663E\u793A\u66F4\u591A stays available whenever React still offers a page OR rows
+      // are hidden locally: once render-ahead lifted the React limit past the
+      // total the native button unmounts for good \u2014 without the second
+      // condition a \u6536\u8D77 would leave the hidden rows unreachable.
+      var needMore = Boolean(native) || rows.length > state.visible;
+      var needCollapse = window.__zcodeBeautify.listCollapse && state.visible > window.__zcodeBeautify.listInit;
+      var bar = container.querySelector(':scope > div[data-zb-list-bar]');
+      if (!needMore && !needCollapse) {
+        if (bar) bar.remove();
+        return;
+      }
+      if (!bar) {
+        bar = document.createElement('div');
+        bar.setAttribute('data-zb-list-bar', '1');
+        bar.style.display = 'flex';
+        bar.style.alignItems = 'center';
+        bar.style.gap = '12px';
+        // Clone the native ghost button so the look tracks ZCode's own styles
+        // (classes ship whatever theme tokens the row buttons use).
+        var tpl = native ? native.cloneNode(true) : null;
+        if (tpl) tpl.removeAttribute('data-task-list-show-more');
+        var zh = (document.documentElement.lang || '').indexOf('zh') === 0;
+        var more = tpl || document.createElement('button');
+        more.type = 'button';
+        more.textContent = native && native.textContent ? native.textContent : (zh ? '\u663E\u793A\u66F4\u591A' : 'Show more');
+        more.setAttribute('data-zb-list-more', '1');
+        more.addEventListener('click', function() {
+          state.visible += window.__zcodeBeautify.listStep;
+          applyListContainer(container);
+        });
+        var less = (tpl ? tpl.cloneNode(true) : document.createElement('button'));
+        less.type = 'button';
+        less.textContent = (zh ? '\u6536\u8D77' : 'Show less');
+        less.setAttribute('data-zb-list-less', '1');
+        less.addEventListener('click', function() {
+          state.visible = window.__zcodeBeautify.listInit;
+          applyListContainer(container);
+        });
+        bar.appendChild(more);
+        bar.appendChild(less);
+      } else {
+        // Refresh the cloned label from the live native button (locale swaps).
+        var moreBtn = bar.querySelector('[data-zb-list-more]');
+        if (moreBtn && native && native.textContent && moreBtn.textContent !== native.textContent) {
+          moreBtn.textContent = native.textContent;
+        }
+      }
+      var moreB = bar.querySelector('[data-zb-list-more]');
+      if (moreB) moreB.style.display = needMore ? '' : 'none';
+      var lessB = bar.querySelector('[data-zb-list-less]');
+      if (lessB) lessB.style.display = needCollapse ? '' : 'none';
+      // Keep the toolbar the LAST child (React appends new rows at the end).
+      if (container.lastElementChild !== bar) container.appendChild(bar);
+    }
+
+    function applyListContainer(container) {
+      var SLOTS = window.__zcodeBeautify;
+      var state = container.__zbListVis;
+      if (!state) state = container.__zbListVis = { visible: SLOTS.listInit, baseInit: SLOTS.listInit };
+      // A config edit re-baselines: the new initial is the collapsed position
+      // every list should show (an expanded position from the old setting
+      // would otherwise linger until the page reloads).
+      if (state.baseInit !== SLOTS.listInit) {
+        state.baseInit = SLOTS.listInit;
+        state.visible = SLOTS.listInit;
+      }
+      var rows = zbListRows(container);
+      if (!rows.length) return;
+      // Render-ahead: while fewer rows are mounted than wanted, click the
+      // (hidden) native button \u2014 React raises its own limit by pageSize each
+      // time. Discrete clicks flush synchronously; the cap only bounds a
+      // pathological no-op loop, the observer self-heals any deferral.
+      var guard = 0;
+      var native = container.querySelector(':scope > button[data-task-list-show-more]');
+      while (rows.length < state.visible && native && guard < 100) {
+        native.click();
+        guard++;
+        rows = zbListRows(container);
+        native = container.querySelector(':scope > button[data-task-list-show-more]');
+      }
+      for (var r = 0; r < rows.length; r++) {
+        var want = r < state.visible ? '' : 'none';
+        if (rows[r].style.display !== want) rows[r].style.display = want;
+      }
+      if (container.getAttribute('data-zb-paging') !== 'on') container.setAttribute('data-zb-paging', 'on');
+      zbListToolbar(container, state);
+    }
+
+    function scan() {
+      var cands = document.querySelectorAll('[data-testid="virtual-project-tasks"] div');
+      for (var i = 0; i < cands.length; i++) {
+        var c = cands[i];
+        if (qualifies(c)) {
+          applyListContainer(c);
+        } else if (c.getAttribute('data-zb-paging') === 'on') {
+          // Stale marking (structure changed, or a pre-fix generation paged
+          // the wrong element): undo the takeover so nothing stays hidden.
+          c.removeAttribute('data-zb-paging');
+          var kids = c.children;
+          for (var k = 0; k < kids.length; k++) {
+            if (kids[k].style && kids[k].style.display === 'none') kids[k].style.display = '';
+          }
+          delete c.__zbListVis;
+        }
+      }
+    }
+
+    scan();
+    // Generation handoff: an observer bound by an OLDER eval keeps firing that
+    // generation's scan closure (its addScriptToEvaluateOnNewDocument entry
+    // outlives serve restarts). Evict it so the live observer always belongs
+    // to the newest generation's code (same model as the hover-card rebinding).
+    if (!window.__zcodeBeautify.listObs || window.__zcodeBeautify.listObsStamp !== LIST_VER) {
+      if (window.__zcodeBeautify.listObs) {
+        try { window.__zcodeBeautify.listObs.disconnect(); } catch (e) {}
+        window.__zcodeBeautify.listObs = null;
+      }
+      var listPend = false;
+      var listKick = function() {
+        if (listPend) return;
+        listPend = true;
+        requestAnimationFrame(function() { listPend = false; scan(); });
+      };
+      var obs = new MutationObserver(function(muts) {
+        // Cheap pre-filter: only mutations touching a paging host matter \u2014
+        // chat-area ticks (100ms elapsed text updates) must not force a
+        // sidebar rescan every frame.
+        for (var m = 0; m < muts.length; m++) {
+          var added = muts[m].addedNodes;
+          for (var n = 0; n < added.length; n++) {
+            var el = added[n];
+            if (el && el.closest && el.closest('[data-testid="virtual-project-tasks"]')) { listKick(); return; }
+          }
+        }
+      });
+      obs.observe(document.documentElement, { childList: true, subtree: true });
+      window.__zcodeBeautify.listObs = obs;
+      window.__zcodeBeautify.listObsStamp = LIST_VER;
+    }
+  }
+
   // Keep the loop alive. Chromium's media suspension can freeze a nominally
   // playing wallpaper video (paused:false but the clock stops \u2014 occlusion
   // misdetection is common with transparent Electron windows), so a watchdog
@@ -8748,6 +9723,15 @@ function buildResetScript(marker = "zcode-beautify") {
   document.getElementById(${JSON.stringify(marker)} + '-chatlook-style')?.remove();
   document.getElementById(${JSON.stringify(marker)} + '-bubble-style')?.remove();
   document.getElementById(${JSON.stringify(marker)} + '-spinner-style')?.remove();
+  document.getElementById(${JSON.stringify(marker)} + '-load-style')?.remove();
+  document.getElementById(${JSON.stringify(marker)} + '-list-style')?.remove();
+  document.querySelectorAll('.' + ${JSON.stringify(marker)} + '-ld-grid').forEach(function(n){n.remove()});
+  // \u4F1A\u8BDD\u5217\u8868\u5206\u9875 teardown: toolbars, container attrs and the inline row hides.
+  document.querySelectorAll('[data-zb-list-bar]').forEach(function(n){n.remove()});
+  document.querySelectorAll('[data-zb-paging]').forEach(function(n){
+    n.removeAttribute('data-zb-paging');
+    n.querySelectorAll(':scope > div').forEach(function(r){ if (r.style.display === 'none') r.style.display = ''; });
+  });
   document.getElementById(${JSON.stringify(marker)} + '-frost')?.remove();
   document.getElementById(${JSON.stringify(marker)} + '-zonemask')?.remove();
   // The bootstrap persists the CSS/wallpaper for the panel's offline self-heal;
@@ -8760,6 +9744,9 @@ function buildResetScript(marker = "zcode-beautify") {
     window.__zcodeBeautify.chatKey = null;
     window.__zcodeBeautify.bubbleKey = null;
     window.__zcodeBeautify.spinnerKey = null;
+    window.__zcodeBeautify.loadKey = null;
+    window.__zcodeBeautify.listKey = null;
+    window.__zcodeBeautify.listStamp = null;
     if (window.__zcodeBeautify.chatObs) {
       try { window.__zcodeBeautify.chatObs.disconnect(); } catch (e) {}
       window.__zcodeBeautify.chatObs = null;
@@ -8768,10 +9755,18 @@ function buildResetScript(marker = "zcode-beautify") {
       try { window.__zcodeBeautify.elapsedObs.disconnect(); } catch (e) {}
       window.__zcodeBeautify.elapsedObs = null;
     }
+    if (window.__zcodeBeautify.loadObs) {
+      try { window.__zcodeBeautify.loadObs.disconnect(); } catch (e) {}
+      window.__zcodeBeautify.loadObs = null;
+    }
+    if (window.__zcodeBeautify.listObs) {
+      try { window.__zcodeBeautify.listObs.disconnect(); } catch (e) {}
+      window.__zcodeBeautify.listObs = null;
+    }
   }
 })();`;
 }
-var CdpError, CdpConnection;
+var CdpError, CdpConnection, LIST_PAGING_VER;
 var init_cdp = __esm({
   "dist/core/cdp.js"() {
     "use strict";
@@ -8846,6 +9841,91 @@ var init_cdp = __esm({
         }
       }
     };
+    LIST_PAGING_VER = 2;
+  }
+});
+
+// dist/core/componentLook.js
+function normalizeComponentLook(raw) {
+  return {
+    enabled: raw?.enabled === true,
+    sidebarTone: clamp(raw?.sidebarTone, 0, 100, DEFAULT_COMPONENT_LOOK.sidebarTone),
+    menubarText: clamp(raw?.menubarText, 20, 100, DEFAULT_COMPONENT_LOOK.menubarText),
+    composerTone: clamp(raw?.composerTone, 0, 100, DEFAULT_COMPONENT_LOOK.composerTone),
+    composerBorder: clamp(raw?.composerBorder, 0, 100, DEFAULT_COMPONENT_LOOK.composerBorder),
+    composerRadius: clamp(raw?.composerRadius, 8, 40, DEFAULT_COMPONENT_LOOK.composerRadius),
+    toolRadius: clamp(raw?.toolRadius, 0, 20, DEFAULT_COMPONENT_LOOK.toolRadius),
+    controlRadius: clamp(raw?.controlRadius, 0, 20, DEFAULT_COMPONENT_LOOK.controlRadius),
+    modalRadius: clamp(raw?.modalRadius, 8, 40, DEFAULT_COMPONENT_LOOK.modalRadius),
+    syncCrTokens: raw?.syncCrTokens !== false
+  };
+}
+function workbuddyComponentCss(look) {
+  if (!look.enabled)
+    return "";
+  const parts = [];
+  parts.push(`/* \u7EC4\u4EF6\u7CBE\u4FEE \xB7 \u58F3\u5C42 */
+.conversation-list {
+  background-color: color-mix(in srgb, var(--wb-bg-secondary) ${look.sidebarTone}%, transparent) !important;
+}
+.menubar-menu-title,
+.menubar-mnemonic {
+  color: color-mix(in srgb, var(--wb-color-text-primary) ${look.menubarText}%, transparent) !important;
+}`);
+  parts.push(`/* \u7EC4\u4EF6\u7CBE\u4FEE \xB7 \u8F93\u5165\u6846 */
+.cr-input-container {
+  background-color: color-mix(in srgb, var(--wb-bg-card) ${look.composerTone}%, transparent) !important;
+  border-color: color-mix(in srgb, var(--wb-border-strong) ${look.composerBorder}%, transparent) !important;
+  border-radius: ${look.composerRadius}px !important;
+}`);
+  parts.push(`/* \u7EC4\u4EF6\u7CBE\u4FEE \xB7 \u5DE5\u5177\u5361 */
+.assistant-message-tool,
+.assistant-message-tool-container .assistant-message-tool,
+.cr-collapse,
+.cr-tool-call {
+  border-radius: ${look.toolRadius}px !important;
+}`);
+  parts.push(`/* \u7EC4\u4EF6\u7CBE\u4FEE \xB7 \u901A\u7528\u7EC4\u4EF6 */
+html[data-theme="light"], html[data-theme="dark"], html.cb-light, html.cb-dark, :root {
+  --wb-radius-md: ${look.controlRadius}px;
+  --wb-radius-lg: ${look.controlRadius}px;
+  --wb-modal-radius: ${look.modalRadius}px;
+  --wb-modal-radius-confirm: ${look.modalRadius}px;
+}`);
+  if (look.syncCrTokens) {
+    parts.push(`/* \u7EC4\u4EF6\u7CBE\u4FEE \xB7 \u4F1A\u8BDD\u4EE4\u724C\u8DDF\u968F\u4E3B\u9898 */
+html[data-theme="light"], html[data-theme="dark"], html.cb-light, html.cb-dark, :root {
+  --cr-text-primary: var(--wb-color-text-primary);
+  --cr-text-secondary: var(--wb-color-text-secondary);
+  --cr-text-tertiary: var(--wb-color-text-tertiary);
+  --cr-text-link: var(--wb-color-text-link-default);
+  --cr-internal-text-primary: var(--wb-color-text-primary);
+  --cr-internal-text-secondary: var(--wb-color-text-secondary);
+  --cr-internal-text-tertiary: var(--wb-color-text-tertiary);
+  --cr-tag-bg: color-mix(in srgb, var(--wb-color-text-primary) 6%, transparent);
+  --cr-user-bubble-bg: color-mix(in srgb, var(--wb-bg-card) 88%, transparent);
+  --cr-scrollbar-thumb: color-mix(in srgb, var(--wb-color-text-primary) 16%, transparent);
+}`);
+  }
+  return parts.join("\n");
+}
+var DEFAULT_COMPONENT_LOOK, clamp;
+var init_componentLook = __esm({
+  "dist/core/componentLook.js"() {
+    "use strict";
+    DEFAULT_COMPONENT_LOOK = {
+      enabled: false,
+      sidebarTone: 72,
+      menubarText: 72,
+      composerTone: 72,
+      composerBorder: 55,
+      composerRadius: 24,
+      toolRadius: 8,
+      controlRadius: 8,
+      modalRadius: 24,
+      syncCrTokens: true
+    };
+    clamp = (v, min, max, dflt) => typeof v === "number" && Number.isFinite(v) ? Math.max(min, Math.min(max, Math.round(v))) : dflt;
   }
 });
 
@@ -14652,7 +15732,7 @@ var require_gifframe = __commonJS({
 var require_gifutil = __commonJS({
   "node_modules/gifwrap/src/gifutil.js"(exports) {
     "use strict";
-    var fs11 = __require("fs");
+    var fs12 = __require("fs");
     var ImageQ = require_image_q();
     var BitmapImage2 = require_bitmapimage();
     var { GifFrame: GifFrame2 } = require_gifframe();
@@ -14767,14 +15847,14 @@ var require_gifutil = __commonJS({
       jimpImage.bitmap.data = bitmapImageToShare.bitmap.data;
       return jimpImage;
     };
-    exports.write = function(path14, frames, spec, encoder) {
+    exports.write = function(path15, frames, spec, encoder) {
       encoder = encoder || defaultCodec;
-      const matches = path14.match(/\.[a-zA-Z]+$/);
+      const matches = path15.match(/\.[a-zA-Z]+$/);
       if (matches !== null && INVALID_SUFFIXES.includes(matches[0].toLowerCase())) {
-        throw new Error(`GIF '${path14}' has an unexpected suffix`);
+        throw new Error(`GIF '${path15}' has an unexpected suffix`);
       }
       return encoder.encodeGif(frames, spec).then((gif2) => {
-        return _writeBinary(path14, gif2.buffer).then(() => {
+        return _writeBinary(path15, gif2.buffer).then(() => {
           return gif2;
         });
       });
@@ -14846,9 +15926,9 @@ var require_gifutil = __commonJS({
         }
       }
     }
-    function _readBinary(path14) {
+    function _readBinary(path15) {
       return new Promise((resolve, reject) => {
-        fs11.readFile(path14, (err, buffer) => {
+        fs12.readFile(path15, (err, buffer) => {
           if (err) {
             return reject(err);
           }
@@ -14856,9 +15936,9 @@ var require_gifutil = __commonJS({
         });
       });
     }
-    function _writeBinary(path14, buffer) {
+    function _writeBinary(path15, buffer) {
       return new Promise((resolve, reject) => {
-        fs11.writeFile(path14, buffer, (err) => {
+        fs12.writeFile(path15, buffer, (err) => {
           if (err) {
             return reject(err);
           }
@@ -16869,9 +17949,9 @@ var require_decoder = __commonJS({
         return a2 < 0 ? 0 : a2 > 255 ? 255 : a2;
       }
       constructor.prototype = {
-        load: function load(path14) {
+        load: function load(path15) {
           var xhr = new XMLHttpRequest();
-          xhr.open("GET", path14, true);
+          xhr.open("GET", path15, true);
           xhr.responseType = "arraybuffer";
           xhr.onload = (function() {
             var data = new Uint8Array(xhr.response || xhr.mozResponseArrayBuffer);
@@ -27774,8 +28854,8 @@ var init_parseUtil = __esm({
     init_errors();
     init_en();
     makeIssue2 = (params) => {
-      const { data, path: path14, errorMaps, issueData } = params;
-      const fullPath = [...path14, ...issueData.path || []];
+      const { data, path: path15, errorMaps, issueData } = params;
+      const fullPath = [...path15, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -28083,11 +29163,11 @@ var init_types2 = __esm({
     init_parseUtil();
     init_util();
     ParseInputLazyPath2 = class {
-      constructor(parent, value, path14, key) {
+      constructor(parent, value, path15, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path14;
+        this._path = path15;
         this._key = key;
       }
       get path() {
@@ -31900,8 +32980,8 @@ var init_parseUtil2 = __esm({
     init_errors2();
     init_en2();
     makeIssue3 = (params) => {
-      const { data, path: path14, errorMaps, issueData } = params;
-      const fullPath = [...path14, ...issueData.path || []];
+      const { data, path: path15, errorMaps, issueData } = params;
+      const fullPath = [...path15, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -32209,11 +33289,11 @@ var init_types3 = __esm({
     init_parseUtil2();
     init_util2();
     ParseInputLazyPath3 = class {
-      constructor(parent, value, path14, key) {
+      constructor(parent, value, path15, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path14;
+        this._path = path15;
         this._key = key;
       }
       get path() {
@@ -36811,8 +37891,8 @@ var init_parseUtil3 = __esm({
     init_errors3();
     init_en3();
     makeIssue4 = (params) => {
-      const { data, path: path14, errorMaps, issueData } = params;
-      const fullPath = [...path14, ...issueData.path || []];
+      const { data, path: path15, errorMaps, issueData } = params;
+      const fullPath = [...path15, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -37120,11 +38200,11 @@ var init_types4 = __esm({
     init_parseUtil3();
     init_util3();
     ParseInputLazyPath4 = class {
-      constructor(parent, value, path14, key) {
+      constructor(parent, value, path15, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path14;
+        this._path = path15;
         this._key = key;
       }
       get path() {
@@ -40965,8 +42045,8 @@ var init_parseUtil4 = __esm({
     init_errors4();
     init_en4();
     makeIssue5 = (params) => {
-      const { data, path: path14, errorMaps, issueData } = params;
-      const fullPath = [...path14, ...issueData.path || []];
+      const { data, path: path15, errorMaps, issueData } = params;
+      const fullPath = [...path15, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -41274,11 +42354,11 @@ var init_types5 = __esm({
     init_parseUtil4();
     init_util4();
     ParseInputLazyPath5 = class {
-      constructor(parent, value, path14, key) {
+      constructor(parent, value, path15, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path14;
+        this._path = path15;
         this._key = key;
       }
       get path() {
@@ -45401,11 +46481,11 @@ var require_Mime = __commonJS({
         }
       }
     };
-    Mime.prototype.getType = function(path14) {
-      path14 = String(path14);
-      let last = path14.replace(/^.*[/\\]/, "").toLowerCase();
+    Mime.prototype.getType = function(path15) {
+      path15 = String(path15);
+      let last = path15.replace(/^.*[/\\]/, "").toLowerCase();
       let ext = last.replace(/^.*\./, "").toLowerCase();
-      let hasPath = last.length < path14.length;
+      let hasPath = last.length < path15.length;
       let hasDot = ext.length < last.length - 1;
       return (hasDot || !hasPath) && this._types[ext] || null;
     };
@@ -51943,8 +53023,8 @@ function isTokenizerStreamBoundsError(error62) {
   }
   return /strtok3[/\\]lib[/\\]stream[/\\]/.test(error62.stack);
 }
-async function fileTypeFromFile(path14, options) {
-  return new FileTypeParser2(options).fromFile(path14, options);
+async function fileTypeFromFile(path15, options) {
+  return new FileTypeParser2(options).fromFile(path15, options);
 }
 async function fileTypeFromStream(stream, options) {
   return new FileTypeParser2(options).fromStream(stream);
@@ -51975,9 +53055,9 @@ var init_file_type = __esm({
           }
         }
       }
-      async fromFile(path14) {
+      async fromFile(path15) {
         this.options.signal?.throwIfAborted();
-        const fileHandle = await fs3.open(path14, fileSystemConstants.O_RDONLY | fileSystemConstants.O_NONBLOCK);
+        const fileHandle = await fs3.open(path15, fileSystemConstants.O_RDONLY | fileSystemConstants.O_NONBLOCK);
         const fileStat = await fileHandle.stat();
         if (!fileStat.isFile()) {
           await fileHandle.close();
@@ -51986,7 +53066,7 @@ var init_file_type = __esm({
         const tokenizer = new FileTokenizer(fileHandle, {
           ...this.getTokenizerOptions(),
           fileInfo: {
-            path: path14,
+            path: path15,
             size: fileStat.size
           }
         });
@@ -52321,9 +53401,9 @@ function createJimp({ plugins: pluginsArg, formats: formatsArg } = {}) {
      * await image.write("test/output.png");
      * ```
      */
-    async write(path14, options) {
-      const mimeType = import_lite.default.getType(path14);
-      await writeFile(path14, await this.getBuffer(mimeType, options));
+    async write(path15, options) {
+      const mimeType = import_lite.default.getType(path15);
+      await writeFile(path15, await this.getBuffer(mimeType, options));
     }
     /**
      * Clone the image into a new Jimp instance.
@@ -52972,8 +54052,8 @@ var init_parseUtil5 = __esm({
     init_errors5();
     init_en5();
     makeIssue6 = (params) => {
-      const { data, path: path14, errorMaps, issueData } = params;
-      const fullPath = [...path14, ...issueData.path || []];
+      const { data, path: path15, errorMaps, issueData } = params;
+      const fullPath = [...path15, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -53281,11 +54361,11 @@ var init_types6 = __esm({
     init_parseUtil5();
     init_util6();
     ParseInputLazyPath6 = class {
-      constructor(parent, value, path14, key) {
+      constructor(parent, value, path15, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path14;
+        this._path = path15;
         this._key = key;
       }
       get path() {
@@ -57730,8 +58810,8 @@ var init_parseUtil6 = __esm({
     init_errors6();
     init_en6();
     makeIssue7 = (params) => {
-      const { data, path: path14, errorMaps, issueData } = params;
-      const fullPath = [...path14, ...issueData.path || []];
+      const { data, path: path15, errorMaps, issueData } = params;
+      const fullPath = [...path15, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -58039,11 +59119,11 @@ var init_types7 = __esm({
     init_parseUtil6();
     init_util7();
     ParseInputLazyPath7 = class {
-      constructor(parent, value, path14, key) {
+      constructor(parent, value, path15, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path14;
+        this._path = path15;
         this._key = key;
       }
       get path() {
@@ -61897,8 +62977,8 @@ var init_parseUtil7 = __esm({
     init_errors7();
     init_en7();
     makeIssue8 = (params) => {
-      const { data, path: path14, errorMaps, issueData } = params;
-      const fullPath = [...path14, ...issueData.path || []];
+      const { data, path: path15, errorMaps, issueData } = params;
+      const fullPath = [...path15, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -62206,11 +63286,11 @@ var init_types8 = __esm({
     init_parseUtil7();
     init_util8();
     ParseInputLazyPath8 = class {
-      constructor(parent, value, path14, key) {
+      constructor(parent, value, path15, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path14;
+        this._path = path15;
         this._key = key;
       }
       get path() {
@@ -66191,8 +67271,8 @@ var init_parseUtil8 = __esm({
     init_errors8();
     init_en8();
     makeIssue9 = (params) => {
-      const { data, path: path14, errorMaps, issueData } = params;
-      const fullPath = [...path14, ...issueData.path || []];
+      const { data, path: path15, errorMaps, issueData } = params;
+      const fullPath = [...path15, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -66500,11 +67580,11 @@ var init_types9 = __esm({
     init_parseUtil8();
     init_util9();
     ParseInputLazyPath9 = class {
-      constructor(parent, value, path14, key) {
+      constructor(parent, value, path15, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path14;
+        this._path = path15;
         this._key = key;
       }
       get path() {
@@ -70353,8 +71433,8 @@ var init_parseUtil9 = __esm({
     init_errors9();
     init_en9();
     makeIssue10 = (params) => {
-      const { data, path: path14, errorMaps, issueData } = params;
-      const fullPath = [...path14, ...issueData.path || []];
+      const { data, path: path15, errorMaps, issueData } = params;
+      const fullPath = [...path15, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -70662,11 +71742,11 @@ var init_types10 = __esm({
     init_parseUtil9();
     init_util10();
     ParseInputLazyPath10 = class {
-      constructor(parent, value, path14, key) {
+      constructor(parent, value, path15, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path14;
+        this._path = path15;
         this._key = key;
       }
       get path() {
@@ -74552,8 +75632,8 @@ var init_parseUtil10 = __esm({
     init_errors10();
     init_en10();
     makeIssue11 = (params) => {
-      const { data, path: path14, errorMaps, issueData } = params;
-      const fullPath = [...path14, ...issueData.path || []];
+      const { data, path: path15, errorMaps, issueData } = params;
+      const fullPath = [...path15, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -74861,11 +75941,11 @@ var init_types11 = __esm({
     init_parseUtil10();
     init_util11();
     ParseInputLazyPath11 = class {
-      constructor(parent, value, path14, key) {
+      constructor(parent, value, path15, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path14;
+        this._path = path15;
         this._key = key;
       }
       get path() {
@@ -78703,8 +79783,8 @@ var init_parseUtil11 = __esm({
     init_errors11();
     init_en11();
     makeIssue12 = (params) => {
-      const { data, path: path14, errorMaps, issueData } = params;
-      const fullPath = [...path14, ...issueData.path || []];
+      const { data, path: path15, errorMaps, issueData } = params;
+      const fullPath = [...path15, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -79012,11 +80092,11 @@ var init_types12 = __esm({
     init_parseUtil11();
     init_util12();
     ParseInputLazyPath12 = class {
-      constructor(parent, value, path14, key) {
+      constructor(parent, value, path15, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path14;
+        this._path = path15;
         this._key = key;
       }
       get path() {
@@ -83089,8 +84169,8 @@ var init_parseUtil12 = __esm({
     init_errors12();
     init_en12();
     makeIssue13 = (params) => {
-      const { data, path: path14, errorMaps, issueData } = params;
-      const fullPath = [...path14, ...issueData.path || []];
+      const { data, path: path15, errorMaps, issueData } = params;
+      const fullPath = [...path15, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -83398,11 +84478,11 @@ var init_types13 = __esm({
     init_parseUtil12();
     init_util13();
     ParseInputLazyPath13 = class {
-      constructor(parent, value, path14, key) {
+      constructor(parent, value, path15, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path14;
+        this._path = path15;
         this._key = key;
       }
       get path() {
@@ -87259,8 +88339,8 @@ var init_parseUtil13 = __esm({
     init_errors13();
     init_en13();
     makeIssue14 = (params) => {
-      const { data, path: path14, errorMaps, issueData } = params;
-      const fullPath = [...path14, ...issueData.path || []];
+      const { data, path: path15, errorMaps, issueData } = params;
+      const fullPath = [...path15, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -87568,11 +88648,11 @@ var init_types14 = __esm({
     init_parseUtil13();
     init_util14();
     ParseInputLazyPath14 = class {
-      constructor(parent, value, path14, key) {
+      constructor(parent, value, path15, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path14;
+        this._path = path15;
         this._key = key;
       }
       get path() {
@@ -91586,8 +92666,8 @@ var init_parseUtil14 = __esm({
     init_errors14();
     init_en14();
     makeIssue15 = (params) => {
-      const { data, path: path14, errorMaps, issueData } = params;
-      const fullPath = [...path14, ...issueData.path || []];
+      const { data, path: path15, errorMaps, issueData } = params;
+      const fullPath = [...path15, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -91895,11 +92975,11 @@ var init_types16 = __esm({
     init_parseUtil14();
     init_util15();
     ParseInputLazyPath15 = class {
-      constructor(parent, value, path14, key) {
+      constructor(parent, value, path15, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path14;
+        this._path = path15;
         this._key = key;
       }
       get path() {
@@ -95863,8 +96943,8 @@ var init_parseUtil15 = __esm({
     init_errors15();
     init_en15();
     makeIssue16 = (params) => {
-      const { data, path: path14, errorMaps, issueData } = params;
-      const fullPath = [...path14, ...issueData.path || []];
+      const { data, path: path15, errorMaps, issueData } = params;
+      const fullPath = [...path15, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -96172,11 +97252,11 @@ var init_types17 = __esm({
     init_parseUtil15();
     init_util16();
     ParseInputLazyPath16 = class {
-      constructor(parent, value, path14, key) {
+      constructor(parent, value, path15, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path14;
+        this._path = path15;
         this._key = key;
       }
       get path() {
@@ -102913,8 +103993,8 @@ var init_parseUtil16 = __esm({
     init_errors16();
     init_en16();
     makeIssue17 = (params) => {
-      const { data, path: path14, errorMaps, issueData } = params;
-      const fullPath = [...path14, ...issueData.path || []];
+      const { data, path: path15, errorMaps, issueData } = params;
+      const fullPath = [...path15, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -103222,11 +104302,11 @@ var init_types18 = __esm({
     init_parseUtil16();
     init_util17();
     ParseInputLazyPath17 = class {
-      constructor(parent, value, path14, key) {
+      constructor(parent, value, path15, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path14;
+        this._path = path15;
         this._key = key;
       }
       get path() {
@@ -118256,8 +119336,8 @@ function analyzeFocus(bitmap) {
     wy += y2 * w;
     wsum += w;
   }
-  const clamp = (v) => Math.min(1, Math.max(0, v));
-  return { x: clamp(wx / wsum / width), y: clamp(wy / wsum / height), fit };
+  const clamp2 = (v) => Math.min(1, Math.max(0, v));
+  return { x: clamp2(wx / wsum / width), y: clamp2(wy / wsum / height), fit };
 }
 function extractSourceColor(bitmap) {
   const { width, height, data } = bitmap;
@@ -118328,6 +119408,9 @@ function transparencyRows(mode, opts) {
     `--color-sidebar:rgba(${rgb},${panelAlpha});`,
     `--color-surface:rgba(${rgb},${baseAlpha});`,
     `--color-surface-hover:rgba(${rgb},${baseAlpha});`,
+    // 3.18 renamed the row-hover paint to --color-hover (session list rows
+    // hover:bg-[var(--color-hover)]); map both so the bridge survives either.
+    `--color-hover:rgba(${rgb},${baseAlpha});`,
     `--color-card:rgba(${rgb},${baseAlpha});`,
     `--color-card-selected:rgba(${rgb},${Math.min(1, baseAlpha + 0.15)});`,
     `--color-popover:rgba(${rgb},${popoverAlpha});`,
@@ -118357,6 +119440,8 @@ function tokenRows(theme, mode, opts) {
     `--color-sidebar:${A2(n2.tone(t2.low), panelAlpha)};`,
     `--color-surface:${A2(n2.tone(t2.lowest === 100 ? 98 : 6), baseAlpha)};`,
     `--color-surface-hover:${A2(n2.tone(t2.high), baseAlpha)};`,
+    // 3.18 hover paint token (see transparencyRows note).
+    `--color-hover:${A2(n2.tone(t2.high), baseAlpha)};`,
     `--color-card:${A2(n2.tone(t2.container), baseAlpha)};`,
     `--color-card-selected:${A2(n2.tone(t2.highest), Math.min(1, baseAlpha + 0.15))};`,
     `--color-card-border:${A2(s2.outlineVariant, 0.5)};`,
@@ -118387,8 +119472,14 @@ function tokenRows(theme, mode, opts) {
   ].filter(Boolean);
 }
 function buildWorkbuddyOverrides(theme, opts) {
-  return `${WB_LIGHT}{${wbRows(theme, "light", opts).join("")}}
+  const vars = `${WB_LIGHT}{${wbRows(theme, "light", opts).join("")}}
 ${WB_DARK}{${wbRows(theme, "dark", opts).join("")}}`;
+  return opts.wallpaperVisible ? vars + workbuddyShellRules() : vars;
+}
+function workbuddyShellRules() {
+  return `
+.teams-container,.teams-grid-scroll-content,[class*="gridViewItem"]{background-color:transparent !important;}
+.conversation-shell,#workbuddy-menubar-container{background-color:var(--wb-bg-content,rgba(26,26,26,.55)) !important;}`;
 }
 function buildWorkbuddyTransparency(opts) {
   const rows = (mode) => {
@@ -118409,7 +119500,7 @@ function buildWorkbuddyTransparency(opts) {
     ].join("");
   };
   return `${WB_LIGHT}{${rows("light")}}
-${WB_DARK}{${rows("dark")}}`;
+${WB_DARK}{${rows("dark")}}` + workbuddyShellRules();
 }
 function wbRows(theme, mode, opts) {
   const s2 = mode === "light" ? theme.schemes.light : theme.schemes.dark;
@@ -118539,7 +119630,7 @@ var VERSION;
 var init_version = __esm({
   "dist/version.js"() {
     "use strict";
-    VERSION = "0.6.5";
+    VERSION = "6.3.0";
   }
 });
 
@@ -118676,6 +119767,16 @@ var init_launch = __esm({
 // dist/core/inject.js
 import fs5 from "node:fs";
 import path3 from "node:path";
+function normalizeListPaging(raw) {
+  const num = (v, dflt) => typeof v === "number" && Number.isFinite(v) ? Math.max(1, Math.min(LIST_PAGING_MAX, Math.round(v))) : dflt;
+  const initial = typeof raw?.initial === "number" && Number.isFinite(raw.initial) && raw.initial >= 1 ? Math.min(LIST_PAGING_MAX, Math.round(raw.initial)) : 0;
+  const collapse = raw?.collapse;
+  return {
+    initial,
+    step: initial > 0 ? num(raw?.step, 5) : 0,
+    collapse: initial > 0 && collapse !== 0 && collapse !== false ? 1 : 0
+  };
+}
 function normalizeChatLook(raw) {
   const pct = (v) => typeof v === "number" && v >= 0 && v <= 100 ? Math.round(v) : 0;
   const cap = typeof raw?.widthCapRem === "number" && Number.isFinite(raw.widthCapRem) ? Math.max(0, Math.min(120, Math.round(raw.widthCapRem))) : 0;
@@ -118683,6 +119784,9 @@ function normalizeChatLook(raw) {
   const inset = capOn > 0 ? typeof raw?.widthInsetRem === "number" && Number.isFinite(raw.widthInsetRem) ? Math.max(0, Math.min(24, Math.round(raw.widthInsetRem))) : CHAT_WIDTH_INSET_DEFAULT : 0;
   const dec = raw?.hideElapsedDecimal;
   const drag = raw?.dragResize;
+  const hover = raw?.sessionHover;
+  const hoverSide = raw?.sessionHoverSide;
+  const hoverMax = raw?.sessionHoverMax;
   return {
     chatDim: pct(raw?.chatDim),
     maskTop: pct(raw?.maskTop),
@@ -118692,7 +119796,12 @@ function normalizeChatLook(raw) {
     widthInsetRem: inset,
     perfSmooth: raw?.perfSmooth === 1 ? 1 : 0,
     hideElapsedDecimal: dec === 1 || dec === true ? 1 : 0,
-    dragResize: drag === 1 || drag === true ? 1 : 0
+    dragResize: drag === 1 || drag === true ? 1 : 0,
+    sessionHover: hover === 1 || hover === true ? 1 : 0,
+    // absent = 1: existing configs predate the side toggle and expect rows on
+    sessionHoverSide: hoverSide === 0 || hoverSide === false ? 0 : 1,
+    sessionHoverMax: typeof hoverMax === "number" && Number.isFinite(hoverMax) && hoverMax >= 1 ? Math.min(60, Math.round(hoverMax)) : 10,
+    composerFade: typeof raw?.composerFade === "number" && Number.isFinite(raw.composerFade) ? pct(raw.composerFade) : 50
   };
 }
 function normalizeTaskSpinnerLook(raw) {
@@ -118705,6 +119814,27 @@ function normalizeTaskSpinnerLook(raw) {
     unreadImage: ref(raw?.unreadImage),
     errorImage: ref(raw?.errorImage),
     spin: raw?.spin !== false,
+    size
+  };
+}
+function normalizeChatLoadLook(raw) {
+  const mode = raw?.mode === "classic" || raw?.mode === "image" ? raw.mode : "default";
+  const size = typeof raw?.size === "number" && Number.isFinite(raw.size) ? Math.max(10, Math.min(28, Math.round(raw.size))) : DEFAULT_CHAT_LOAD_LOOK.size;
+  const ref = (v) => typeof v === "string" ? v.trim().slice(0, SPINNER_REF_MAX_CHARS) : "";
+  return {
+    mode: mode === "image" && !ref(raw?.image) ? "default" : mode,
+    image: ref(raw?.image),
+    spin: raw?.spin !== false,
+    size
+  };
+}
+function normalizeFabLook(raw) {
+  const mode = raw?.mode === "image" ? "image" : "default";
+  const size = typeof raw?.size === "number" && Number.isFinite(raw.size) ? Math.max(20, Math.min(64, Math.round(raw.size))) : DEFAULT_FAB_LOOK.size;
+  const ref = (v) => typeof v === "string" ? v.trim().slice(0, SPINNER_REF_MAX_CHARS) : "";
+  return {
+    mode: mode === "image" && !ref(raw?.image) ? "default" : mode,
+    image: ref(raw?.image),
     size
   };
 }
@@ -118850,6 +119980,10 @@ ${rootSelector} { background: transparent !important; }
       parts.push(buildTransparencyOverrides({ dim: config2.dim }));
     }
   }
+  const componentLook = app.tokens === "wb" ? normalizeComponentLook(config2.componentLook) : normalizeComponentLook(void 0);
+  if (app.tokens === "wb" && componentLook.enabled) {
+    parts.push(workbuddyComponentCss(componentLook));
+  }
   let wallpaperDataUri;
   if (!config2.sceneVideoUrl && config2.wallpaperVisible) {
     const p2 = path3.resolve(config2.wallpaperPath ?? "").toLowerCase();
@@ -118872,6 +120006,12 @@ ${rootSelector} { background: transparent !important; }
   if (spinnerLook.errorImage) {
     spinnerLook.errorImage = resolveSpinnerImageRef(spinnerLook.errorImage, config2.apiPort ?? target().apiPort, mediaToken);
   }
+  const chatLoadLook = normalizeChatLoadLook(config2.chatLoadLook);
+  if (chatLoadLook.image) {
+    chatLoadLook.image = resolveSpinnerImageRef(chatLoadLook.image, config2.apiPort ?? target().apiPort, mediaToken);
+    if (!chatLoadLook.image)
+      chatLoadLook.mode = "default";
+  }
   return {
     css: parts.join("\n"),
     wallpaperDataUri,
@@ -118887,10 +120027,18 @@ ${rootSelector} { background: transparent !important; }
     // copied from ZCode can never inject rules for elements that do not exist.
     chatLook: chatUi ? normalizeChatLook(config2.chatLook) : normalizeChatLook(void 0),
     bubbleLook: chatUi ? normalizeBubbleLook(config2.bubbleLook) : normalizeBubbleLook(void 0),
+    componentLook,
     taskSpinnerLook: chatUi ? spinnerLook : normalizeTaskSpinnerLook(void 0),
+    chatLoadLook: chatUi ? chatLoadLook : normalizeChatLoadLook(void 0),
+    // 会话列表分页: ZCode-only (the virtual-project-tasks list does not exist
+    // elsewhere); the disabled default keeps WorkBuddy untouched.
+    listPaging: chatUi ? normalizeListPaging(config2.listPaging) : normalizeListPaging(void 0),
     startupClean: config2.startupClean !== false,
     chatUi,
-    startupProbe: app.startupProbe
+    startupProbe: app.startupProbe,
+    // 会话概览悬停卡: only ZCode rows carry session ids, and only when the
+    // toggle is on does the bootstrap need the (token-bearing) endpoint.
+    previewApi: chatUi && normalizeChatLook(config2.chatLook).sessionHover === 1 ? tok(`http://127.0.0.1:${config2.apiPort ?? target().apiPort}/api/session-preview`) : ""
   };
 }
 async function applyToZCode(config2, payload) {
@@ -118926,16 +120074,18 @@ async function resetZCode(port) {
   }
   return count;
 }
-var CHAT_WIDTH_INSET_DEFAULT, DEFAULT_BUBBLE_LOOK, DEFAULT_TASK_SPINNER_LOOK, SPINNER_REF_MAX_CHARS, SPINNER_FILE_MAX_BYTES, SPINNER_MIME, BUBBLE_PRESETS, DEFAULT_CONFIG;
+var LIST_PAGING_MAX, CHAT_WIDTH_INSET_DEFAULT, DEFAULT_BUBBLE_LOOK, DEFAULT_TASK_SPINNER_LOOK, SPINNER_REF_MAX_CHARS, DEFAULT_CHAT_LOAD_LOOK, DEFAULT_FAB_LOOK, SPINNER_FILE_MAX_BYTES, SPINNER_MIME, BUBBLE_PRESETS, DEFAULT_CONFIG;
 var init_inject = __esm({
   "dist/core/inject.js"() {
     "use strict";
     init_cdp();
     init_bubbleRecipes();
+    init_componentLook();
     init_monet();
     init_tokens();
     init_target();
     init_launch();
+    LIST_PAGING_MAX = 100;
     CHAT_WIDTH_INSET_DEFAULT = 12;
     DEFAULT_BUBBLE_LOOK = {
       preset: "default",
@@ -118951,6 +120101,17 @@ var init_inject = __esm({
       size: 16
     };
     SPINNER_REF_MAX_CHARS = 5e5;
+    DEFAULT_CHAT_LOAD_LOOK = {
+      mode: "default",
+      image: "",
+      spin: true,
+      size: 16
+    };
+    DEFAULT_FAB_LOOK = {
+      mode: "default",
+      image: "",
+      size: 34
+    };
     SPINNER_FILE_MAX_BYTES = 2 * 1024 * 1024;
     SPINNER_MIME = {
       ".gif": "image/gif",
@@ -120640,7 +121801,7 @@ var init_experimental = __esm({
 
 // dist/mcp/server.js
 import { existsSync as existsSync3, statSync } from "node:fs";
-import path13 from "node:path";
+import path14 from "node:path";
 
 // node_modules/zod/v3/helpers/util.js
 var util;
@@ -121016,8 +122177,8 @@ function getErrorMap() {
 
 // node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path14, errorMaps, issueData } = params;
-  const fullPath = [...path14, ...issueData.path || []];
+  const { data, path: path15, errorMaps, issueData } = params;
+  const fullPath = [...path15, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -121132,11 +122293,11 @@ var errorUtil;
 
 // node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path14, key) {
+  constructor(parent, value, path15, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path14;
+    this._path = path15;
     this._key = key;
   }
   get path() {
@@ -125090,10 +126251,10 @@ function mergeDefs(...defs) {
 function cloneDef(schema) {
   return mergeDefs(schema._zod.def);
 }
-function getElementAtPath(obj, path14) {
-  if (!path14)
+function getElementAtPath(obj, path15) {
+  if (!path15)
     return obj;
-  return path14.reduce((acc, key) => acc?.[key], obj);
+  return path15.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -125433,11 +126594,11 @@ function explicitlyAborted(x2, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path14, issues) {
+function prefixIssues(path15, issues) {
   return issues.map((iss) => {
     var _a3;
     (_a3 = iss).path ?? (_a3.path = []);
-    iss.path.unshift(path14);
+    iss.path.unshift(path15);
     return iss;
   });
 }
@@ -125887,16 +127048,16 @@ function flattenError(error62, mapper = (issue2) => issue2.message) {
 }
 function formatError(error62, mapper = (issue2) => issue2.message) {
   const fieldErrors = { _errors: [] };
-  const processError = (error63, path14 = []) => {
+  const processError = (error63, path15 = []) => {
     for (const issue2 of error63.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
-        issue2.errors.map((issues) => processError({ issues }, [...path14, ...issue2.path]));
+        issue2.errors.map((issues) => processError({ issues }, [...path15, ...issue2.path]));
       } else if (issue2.code === "invalid_key") {
-        processError({ issues: issue2.issues }, [...path14, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path15, ...issue2.path]);
       } else if (issue2.code === "invalid_element") {
-        processError({ issues: issue2.issues }, [...path14, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path15, ...issue2.path]);
       } else {
-        const fullpath = [...path14, ...issue2.path];
+        const fullpath = [...path15, ...issue2.path];
         if (fullpath.length === 0) {
           fieldErrors._errors.push(mapper(issue2));
         } else {
@@ -125935,17 +127096,17 @@ function formatError(error62, mapper = (issue2) => issue2.message) {
 }
 function treeifyError(error62, mapper = (issue2) => issue2.message) {
   const result = { errors: [] };
-  const processError = (error63, path14 = []) => {
+  const processError = (error63, path15 = []) => {
     var _a3;
     for (const issue2 of error63.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
-        issue2.errors.map((issues) => processError({ issues }, [...path14, ...issue2.path]));
+        issue2.errors.map((issues) => processError({ issues }, [...path15, ...issue2.path]));
       } else if (issue2.code === "invalid_key") {
-        processError({ issues: issue2.issues }, [...path14, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path15, ...issue2.path]);
       } else if (issue2.code === "invalid_element") {
-        processError({ issues: issue2.issues }, [...path14, ...issue2.path]);
+        processError({ issues: issue2.issues }, [...path15, ...issue2.path]);
       } else {
-        const fullpath = [...path14, ...issue2.path];
+        const fullpath = [...path15, ...issue2.path];
         if (fullpath.length === 0) {
           result.errors.push(mapper(issue2));
           continue;
@@ -125984,8 +127145,8 @@ function treeifyError(error62, mapper = (issue2) => issue2.message) {
 }
 function toDotPath(_path) {
   const segs = [];
-  const path14 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
-  for (const seg of path14) {
+  const path15 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
+  for (const seg of path15) {
     if (typeof seg === "number")
       segs.push(`[${seg}]`);
     else if (typeof seg === "symbol")
@@ -141500,11 +142661,11 @@ function normalizeObjectSchema(schema) {
   }
   return void 0;
 }
-function getDotPath(path14) {
-  if (path14.length === 0) {
+function getDotPath(path15) {
+  if (path15.length === 0) {
     return "object root";
   }
-  return path14.reduce((acc, seg, index) => {
+  return path15.reduce((acc, seg, index) => {
     if (index === 0) {
       return String(seg);
     }
@@ -143731,13 +144892,13 @@ function resolveRef(ref, ctx) {
   if (!ref.startsWith("#")) {
     throw new Error("External $ref is not supported, only local refs (#/...) are allowed");
   }
-  const path14 = ref.slice(1).split("/").filter(Boolean);
-  if (path14.length === 0) {
+  const path15 = ref.slice(1).split("/").filter(Boolean);
+  if (path15.length === 0) {
     return ctx.rootSchema;
   }
   const defsKey = ctx.version === "draft-2020-12" ? "$defs" : "definitions";
-  if (path14[0] === defsKey) {
-    const key = path14[1] === void 0 ? void 0 : decodeJSONPointerSegment(path14[1]);
+  if (path15[0] === defsKey) {
+    const key = path15[1] === void 0 ? void 0 : decodeJSONPointerSegment(path15[1]);
     if (!key || !ctx.defs[key]) {
       throw new Error(`Reference not found: ${ref}`);
     }
@@ -149986,7 +151147,13 @@ function baseConfig(opts, stored) {
     chatLook: normalizeChatLook(opts.chatLook ? { ...stored.chatLook, ...opts.chatLook } : stored.chatLook),
     // 运行中图标 merges the same way (mode/image/spin/size), then normalizes
     // inside buildPayload where the image reference is resolved too.
-    taskSpinnerLook: normalizeTaskSpinnerLook(opts.taskSpinnerLook ? { ...stored.taskSpinnerLook, ...opts.taskSpinnerLook } : stored.taskSpinnerLook)
+    taskSpinnerLook: normalizeTaskSpinnerLook(opts.taskSpinnerLook ? { ...stored.taskSpinnerLook, ...opts.taskSpinnerLook } : stored.taskSpinnerLook),
+    // 会话底部加载图标 merges the same way (mode/image/spin/size).
+    chatLoadLook: normalizeChatLoadLook(opts.chatLoadLook ? { ...stored.chatLoadLook, ...opts.chatLoadLook } : stored.chatLoadLook),
+    // 会话列表分页 merges the same way (initial/step/collapse).
+    listPaging: normalizeListPaging(opts.listPaging ? { ...stored.listPaging, ...opts.listPaging } : stored.listPaging),
+    // 设置按钮 merges the same way (mode/image/size).
+    fabLook: normalizeFabLook(opts.fabLook ? { ...stored.fabLook, ...opts.fabLook } : stored.fabLook)
   };
 }
 async function applySceneWallpaper(scenePath, opts = {}) {
@@ -150060,20 +151227,524 @@ init_launch();
 init_target();
 init_inject();
 init_experimental();
+
+// dist/core/bubbleStudio.js
+init_launch();
+init_inject();
+import fs11 from "node:fs";
+import path13 from "node:path";
+var BUBBLE_STUDIO_URI = "ui://zcode-beautify/bubble-studio.html";
+var BUBBLE_STUDIO_SURFACE = "bubble-studio";
+var BUILTIN_NAMES = {
+  default: "ZCode \u539F\u7248",
+  accent: "\u4E3B\u9898\u5F3A\u8C03\u8272",
+  glass: "\u73BB\u7483\u62DF\u6001",
+  outline: "\u63CF\u8FB9",
+  flat: "\u6241\u5E73"
+};
+function builtinBubbleRecipes() {
+  const seed = { preset: "default", tint: 28, radius: 12, width: 70, align: "right" };
+  return Object.keys(BUILTIN_NAMES).map((preset) => ({
+    id: preset,
+    name: BUILTIN_NAMES[preset],
+    builtin: true,
+    look: preset === "default" ? { ...seed } : { ...seed, preset, tint: preset === "outline" ? 40 : 28, radius: preset === "glass" ? 16 : 12 }
+  }));
+}
+var MAX_SAVED_RECIPES = 50;
+function recipesFile() {
+  return path13.join(dataDir(), "bubble-recipes.json");
+}
+function readSaved() {
+  try {
+    const parsed = JSON.parse(fs11.readFileSync(recipesFile(), "utf8"));
+    if (!Array.isArray(parsed?.recipes))
+      return [];
+    return parsed.recipes.filter((r2) => r2 && typeof r2.id === "string" && typeof r2.name === "string");
+  } catch {
+    return [];
+  }
+}
+function writeSaved(recipes) {
+  fs11.mkdirSync(dataDir(), { recursive: true });
+  const file2 = { version: 1, recipes };
+  fs11.writeFileSync(recipesFile(), JSON.stringify(file2, null, 2));
+}
+function lookEquals(a2, b) {
+  return a2.preset === b.preset && a2.tint === b.tint && a2.radius === b.radius && a2.width === b.width && a2.align === b.align && (a2.customCss ?? "") === (b.customCss ?? "");
+}
+function newId() {
+  return "r-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 6);
+}
+function bubbleStudioState() {
+  const builtins = builtinBubbleRecipes();
+  const saved = readSaved();
+  const active = normalizeBubbleLook(loadConfig().bubbleLook);
+  const match = [...saved, ...builtins].find((r2) => lookEquals(normalizeBubbleLook(r2.look), active));
+  return { uri: BUBBLE_STUDIO_URI, active, activeRecipeId: match ? match.id : null, builtins, saved };
+}
+function saveBubbleRecipe(input2) {
+  const recipes = readSaved();
+  const existing = input2.id ? recipes.find((r2) => r2.id === input2.id) : void 0;
+  const base = { ...loadConfig().bubbleLook, ...existing ? existing.look : {}, ...input2.look };
+  const look = normalizeBubbleLook(base);
+  const name = String(input2.name ?? "").trim().slice(0, 40) || existing?.name || "\u6C14\u6CE1\u914D\u65B9";
+  if (existing) {
+    existing.name = name;
+    existing.look = look;
+    writeSaved(recipes);
+    return existing;
+  }
+  if (recipes.length >= MAX_SAVED_RECIPES) {
+    throw new Error(`\u5DF2\u4FDD\u5B58 ${MAX_SAVED_RECIPES} \u4E2A\u914D\u65B9\uFF0C\u8BF7\u5148\u5220\u9664\u4E00\u4E9B\u518D\u4FDD\u5B58`);
+  }
+  const recipe = { id: newId(), name, look, createdAt: Date.now() };
+  recipes.push(recipe);
+  writeSaved(recipes);
+  return recipe;
+}
+function deleteBubbleRecipe(id) {
+  if (builtinBubbleRecipes().some((r2) => r2.id === id)) {
+    throw new Error("\u5185\u7F6E\u6837\u5F0F\u4E0D\u80FD\u5220\u9664");
+  }
+  const recipes = readSaved();
+  const next = recipes.filter((r2) => r2.id !== id);
+  if (next.length === recipes.length)
+    throw new Error(`\u627E\u4E0D\u5230\u914D\u65B9: ${id}`);
+  writeSaved(next);
+}
+function bubbleStudioResultMeta() {
+  return {
+    ui: { resourceUri: BUBBLE_STUDIO_URI, surface: BUBBLE_STUDIO_SURFACE },
+    "ui/resourceUri": BUBBLE_STUDIO_URI
+  };
+}
+function bubbleLookPatchFromTool(bubble) {
+  const patch = {};
+  if (bubble.preset !== void 0)
+    patch.preset = bubble.preset;
+  if (bubble.tint !== void 0)
+    patch.tint = bubble.tint;
+  if (bubble.radius !== void 0)
+    patch.radius = bubble.radius;
+  if (bubble.width !== void 0)
+    patch.width = bubble.width;
+  if (bubble.align !== void 0)
+    patch.align = bubble.align;
+  if (bubble.custom_css !== void 0)
+    patch.customCss = bubble.custom_css;
+  return patch;
+}
+
+// dist/mcp/bubbleStudioHtml.js
+init_bubbleRecipes();
+function bubbleStudioHtml() {
+  const recipesJson = JSON.stringify(bubbleRecipes(BUBBLE_SELECTOR_PREVIEW));
+  return `<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>\u6C14\u6CE1\u5DE5\u574A \xB7 zcode-beautify</title>
+<style>
+:root { --color-primary:#2563eb; --color-surface:#ffffff; --color-text:#18181b;
+  --color-border:#e4e4e7; --color-muted:#71717a; --page:#f4f4f5; --card:#fafafa; }
+:root[data-theme="dark"] { --color-primary:#60a5fa; --color-surface:#27272a; --color-text:#fafafa;
+  --color-border:#3f3f46; --color-muted:#a1a1aa; --page:#18181b; --card:#1f1f23; }
+* { box-sizing: border-box; }
+body { margin:0; padding:14px; font:13px/1.6 system-ui, "Segoe UI", "Microsoft YaHei", sans-serif;
+  color:var(--color-text); background:var(--page); }
+header { display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+h1 { font-size:15px; margin:0; font-weight:600; }
+#zb-active { color:var(--color-muted); font-size:12px; }
+#zb-reset { margin-left:auto; }
+button { font:inherit; font-size:12px; padding:4px 12px; border-radius:8px; cursor:pointer;
+  border:1px solid var(--color-border); background:var(--card); color:var(--color-text); }
+button:hover { border-color:var(--color-primary); }
+button[disabled] { opacity:.5; cursor:default; }
+button.primary { background:var(--color-primary); border-color:var(--color-primary); color:#fff; }
+#zb-notice { position:fixed; left:50%; transform:translateX(-50%); bottom:14px; z-index:9;
+  background:var(--color-surface); border:1px solid var(--color-border); border-radius:10px;
+  padding:6px 14px; font-size:12px; box-shadow:0 6px 24px rgb(0 0 0 / .18); }
+#zb-notice[hidden] { display:none; }
+#zb-editor { background:var(--card); border:1px solid var(--color-border); border-radius:12px;
+  padding:12px; margin-bottom:12px; }
+#zb-editor .row { display:flex; align-items:center; gap:10px; margin:6px 0; flex-wrap:wrap; }
+#zb-editor label { font-size:12px; color:var(--color-muted); min-width:52px; }
+#zb-editor input[type="text"] { font:inherit; padding:4px 8px; border-radius:8px;
+  border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); width:180px; }
+#zb-editor input[type="range"] { width:150px; }
+#zb-editor output { font-size:12px; min-width:34px; color:var(--color-muted); }
+#zb-editor select { font:inherit; font-size:12px; padding:3px 6px; border-radius:8px;
+  border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text); }
+#zb-css-wrap { margin-top:8px; }
+#zb-css-wrap[hidden] { display:none; }
+#zb-css { width:100%; min-height:110px; resize:vertical; font:12px/1.5 Consolas, monospace;
+  padding:8px; border-radius:8px; border:1px solid var(--color-border);
+  background:var(--color-surface); color:var(--color-text); }
+#zb-css-hint { font-size:11px; color:var(--color-muted); margin-top:4px; }
+#zb-gallery { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:10px; }
+.zb-card { background:var(--card); border:1px solid var(--color-border); border-radius:12px;
+  padding:10px; cursor:pointer; position:relative; }
+.zb-card:hover { border-color:var(--color-primary); }
+.zb-card.zb-selected { border-color:var(--color-primary); box-shadow:0 0 0 1px var(--color-primary); }
+.zb-badge { position:absolute; top:8px; right:8px; font-size:10px; color:var(--color-primary);
+  border:1px solid var(--color-primary); border-radius:6px; padding:0 6px; }
+.zb-demo { margin:6px 0 8px; }
+.zb-ai { color:var(--color-muted); font-size:12px; margin:0 0 6px 2px; }
+/* Base bubble: mirrors the visual ZCode ships (recipes override bg/border
+   with !important, geometry always comes from the --zb-bubble-* vars). */
+.zb-bubble { display:inline-block; padding:7px 12px; font-size:13px; line-height:1.6;
+  background:var(--color-surface); color:var(--color-text);
+  border:1px solid var(--color-border); word-break:break-word;
+  border-radius:var(--zb-bubble-radius, 12px); max-width:var(--zb-bubble-maxw, 70%); }
+.zb-bubble-row { display:flex; align-items:var(--zb-bubble-align, flex-end); }
+.zb-name { font-size:12px; font-weight:500; }
+.zb-hint { font-size:11px; color:var(--color-muted); margin-top:2px; }
+footer { margin-top:12px; font-size:11px; color:var(--color-muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>\u6C14\u6CE1\u5DE5\u574A</h1>
+  <span id="zb-active">\u8BFB\u53D6\u4E2D\u2026</span>
+  <button id="zb-reset" type="button" disabled>\u6062\u590D\u9ED8\u8BA4</button>
+</header>
+
+<section id="zb-editor">
+  <div class="row">
+    <label for="zb-name">\u540D\u79F0</label>
+    <input id="zb-name" type="text" maxlength="40" placeholder="\u4FDD\u5B58\u4E3A\u65B0\u914D\u65B9\u7684\u540D\u79F0" disabled>
+  </div>
+  <div class="row">
+    <label for="zb-tint">\u7740\u8272</label>
+    <input id="zb-tint" type="range" min="0" max="100" step="1" disabled>
+    <output id="zb-tint-v">28</output>
+    <label for="zb-radius">\u5706\u89D2</label>
+    <input id="zb-radius" type="range" min="4" max="24" step="1" disabled>
+    <output id="zb-radius-v">12</output>
+    <label for="zb-width">\u5BBD\u5EA6</label>
+    <input id="zb-width" type="range" min="40" max="90" step="1" disabled>
+    <output id="zb-width-v">70</output>
+  </div>
+  <div class="row">
+    <label for="zb-align">\u5BF9\u9F50</label>
+    <select id="zb-align" disabled>
+      <option value="right">\u9760\u53F3\uFF08ZCode \u539F\u751F\uFF09</option>
+      <option value="left">\u9760\u5DE6</option>
+    </select>
+    <button id="zb-delete" type="button" hidden>\u5220\u9664\u6B64\u914D\u65B9</button>
+  </div>
+  <div id="zb-css-wrap" hidden>
+    <textarea id="zb-css" spellcheck="false" placeholder=".zb-bubble { \u2026 }"></textarea>
+    <div id="zb-css-hint">\u9009\u62E9\u5668\u7EA6\u5B9A .zb-bubble = \u7528\u6237\u6D88\u606F\u6C14\u6CE1\uFF0C.zb-bubble-row = \u6240\u5728\u884C\uFF1B\u5EFA\u8BAE\u7528 var(--color-primary) \u7B49\u4E3B\u9898\u53D8\u91CF\u5E76\u52A0 !important\u3002</div>
+  </div>
+  <div class="row">
+    <button id="zb-apply" type="button" class="primary" disabled>\u5E94\u7528\u5230\u804A\u5929</button>
+    <button id="zb-save" type="button" disabled>\u4FDD\u5B58\u4E3A\u914D\u65B9</button>
+    <span id="zb-count" style="font-size:12px;color:var(--color-muted)"></span>
+  </div>
+</section>
+
+<section id="zb-gallery" aria-live="polite"></section>
+<footer>\u9884\u89C8\u4E3A\u8FD1\u4F3C\u914D\u8272\uFF0C\u5B9E\u9645\u6548\u679C\u4EE5\u5E94\u7528\u540E\u7684\u804A\u5929\u754C\u9762\u4E3A\u51C6\uFF1B\u70B9\u5361\u7247\u9009\u4E2D\uFF0C\u53F3\u4FA7\u8C03\u6574\u540E\u300C\u5E94\u7528\u5230\u804A\u5929\u300D\u5373\u65F6\u751F\u6548\u3002</footer>
+<div id="zb-notice" hidden></div>
+
+<script>
+(function () {
+  'use strict';
+  // Builtin recipes, baked server-side from core/bubbleRecipes.ts against the
+  // literal preview selectors \u2014 the same CSS cdp.ts injects against ZCode's
+  // real selectors, so previews match what lands in the live chat.
+  var RECIPES = ${recipesJson};
+  var DEMO_TEXT = '\u5E2E\u6211\u628A\u6C14\u6CE1\u6362\u6210\u8FD9\u4E2A\u6837\u5F0F';
+  var DEMO_AI = '\u5DF2\u52A0\u8F7D\u6C14\u6CE1\u5DE5\u574A\uFF0C\u70B9\u5361\u7247\u8BD5\u7A7F \u2726';
+  var ZC = null;
+  var state = null;   // { active, activeRecipeId, builtins, saved }
+  var sel = 'default';
+  var draft = null;   // edited copy of the selected recipe's look
+  var busy = false;
+  var el = function (id) { return document.getElementById(id); };
+  var gallery = el('zb-gallery');
+  var styleEl = document.createElement('style');
+  styleEl.id = 'zb-dynamic';
+  document.head.appendChild(styleEl);
+
+  function toast(msg) {
+    var n = el('zb-notice');
+    n.textContent = msg;
+    n.hidden = false;
+    window.setTimeout(function () { n.hidden = true; }, 1800);
+  }
+  function note(msg) { toast(msg); }
+  function reportHeight() {
+    try { if (ZC && ZC.notifyIntrinsicHeight) ZC.notifyIntrinsicHeight(document.body.scrollHeight); } catch (e) {}
+  }
+  function setEnabled(on) {
+    var ids = ['zb-name', 'zb-tint', 'zb-radius', 'zb-width', 'zb-align', 'zb-apply', 'zb-save', 'zb-reset'];
+    for (var i = 0; i < ids.length; i++) el(ids[i]).disabled = !on;
+    el('zb-css').disabled = !on;
+  }
+  function allRecipes() {
+    if (!state) return [];
+    return state.builtins.concat(state.saved);
+  }
+  function findRecipe(id) {
+    var list = allRecipes();
+    for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    return null;
+  }
+  // Scope recipe/user CSS to one card wrapper. The row marker runs FIRST and
+  // through a placeholder so the plain '.zb-bubble' pass cannot eat half of a
+  // '.zb-bubble-row' (same ordering trick as core rewriteCustomBubbleCss).
+  function scopeCss(css, wrap) {
+    var ROW = '.zb-bubble-row', BUB = '.zb-bubble', MARK = '@@ZBROW@@';
+    return String(css)
+      .split(ROW).join(MARK)
+      .split(BUB).join(wrap + ' .zb-bubble')
+      .split(MARK).join(wrap + ' .zb-bubble-row');
+  }
+  function recipeCss(look) {
+    if (!look) return '';
+    if (look.preset === 'custom') return look.customCss || '';
+    if (look.preset === 'default') return '';
+    return RECIPES[look.preset] || '';
+  }
+  // Mirrors cdp.ts applyBubbleLook: 2px tail corner on the aligned edge.
+  function varsFor(look) {
+    var r = Math.max(2, Math.round(look.radius || 12));
+    var corners = look.align === 'left' ? ('2px ' + r + 'px ' + r + 'px ' + r + 'px') : (r + 'px 2px ' + r + 'px ' + r + 'px');
+    return '--zb-bubble-tint:' + (Math.max(0, Math.min(100, look.tint || 0)) / 100)
+      + ';--zb-bubble-radius:' + corners
+      + ';--zb-bubble-maxw:' + Math.max(40, Math.min(90, look.width || 70)) + '%'
+      + ';--zb-bubble-align:' + (look.align === 'left' ? 'flex-start' : 'flex-end');
+  }
+  function cardNode(recipe, index) {
+    var card = document.createElement('div');
+    card.className = 'zb-card' + (recipe.id === sel ? ' zb-selected' : '');
+    card.setAttribute('data-id', recipe.id);
+    var demo = document.createElement('div');
+    demo.className = 'zb-demo zb-c' + index;
+    demo.setAttribute('style', varsFor(recipe.look));
+    var ai = document.createElement('p');
+    ai.className = 'zb-ai';
+    ai.textContent = DEMO_AI;
+    var row = document.createElement('div');
+    row.className = 'zb-bubble-row';
+    var bub = document.createElement('div');
+    bub.className = 'zb-bubble';
+    bub.textContent = DEMO_TEXT;
+    row.appendChild(bub);
+    demo.appendChild(ai);
+    demo.appendChild(row);
+    card.appendChild(demo);
+    var name = document.createElement('div');
+    name.className = 'zb-name';
+    name.textContent = recipe.name;
+    card.appendChild(name);
+    if (state && recipe.id === state.activeRecipeId) {
+      var badge = document.createElement('span');
+      badge.className = 'zb-badge';
+      badge.textContent = '\u5F53\u524D';
+      card.appendChild(badge);
+    }
+    if (recipe.look.preset === 'default') {
+      var hint = document.createElement('div');
+      hint.className = 'zb-hint';
+      hint.textContent = '\u539F\u751F\u6837\u5F0F\uFF0C\u4E0D\u54CD\u5E94\u5706\u89D2/\u7740\u8272\u8C03\u6574';
+      card.appendChild(hint);
+    }
+    if (recipe.look.preset === 'custom' && !(recipe.look.customCss || '').trim()) {
+      var ch = document.createElement('div');
+      ch.className = 'zb-hint';
+      ch.textContent = '\u81EA\u5B9A\u4E49 CSS \u4E3A\u7A7A\uFF0C\u4EC5\u5E94\u7528\u51E0\u4F55\u53C2\u6570';
+      card.appendChild(ch);
+    }
+    card.addEventListener('click', function () { select(recipe.id); });
+    return card;
+  }
+  function render() {
+    if (!state) return;
+    var list = allRecipes();
+    var cssText = '';
+    gallery.textContent = '';
+    for (var i = 0; i < list.length; i++) {
+      var wrap = '.zb-c' + i;
+      var scoped = scopeCss(recipeCss(list[i].look), wrap);
+      if (scoped) cssText += scoped + String.fromCharCode(10);
+      gallery.appendChild(cardNode(list[i], i));
+    }
+    styleEl.textContent = cssText;
+    var cur = findRecipe(state.activeRecipeId);
+    el('zb-active').textContent = '\u5F53\u524D\u804A\u5929: ' + (cur ? cur.name : (state.active.preset === 'default' ? 'ZCode \u539F\u7248' : state.active.preset));
+    el('zb-count').textContent = state.saved.length ? ('\u5DF2\u4FDD\u5B58 ' + state.saved.length + ' \u4E2A\u914D\u65B9') : '';
+    reportHeight();
+  }
+  function syncEditor() {
+    if (!draft) return;
+    el('zb-name').value = findRecipe(sel) ? findRecipe(sel).name : '';
+    el('zb-tint').value = draft.tint; el('zb-tint-v').value = draft.tint;
+    el('zb-radius').value = draft.radius; el('zb-radius-v').value = draft.radius;
+    el('zb-width').value = draft.width; el('zb-width-v').value = draft.width;
+    el('zb-align').value = draft.align;
+    var stock = draft.preset === 'default';
+    el('zb-tint').disabled = stock; el('zb-radius').disabled = stock; el('zb-width').disabled = stock;
+    el('zb-css-wrap').hidden = draft.preset !== 'custom';
+    el('zb-css').value = draft.customCss || '';
+    el('zb-delete').hidden = !findRecipe(sel) || !!findRecipe(sel).builtin;
+  }
+  function select(id, keepDraft) {
+    var r = findRecipe(id);
+    if (!r) return;
+    sel = id;
+    draft = { preset: r.look.preset, tint: r.look.tint, radius: r.look.radius, width: r.look.width, align: r.look.align, customCss: r.look.customCss || '' };
+    if (!keepDraft) syncEditor();
+    try { if (ZC && ZC.setWidgetState) ZC.setWidgetState({ modelContent: null, privateContent: { sel: sel } }).catch(function () {}); } catch (e) {}
+    render();
+  }
+  function patchDraft() {
+    if (!draft) return;
+    draft.tint = Number(el('zb-tint').value);
+    draft.radius = Number(el('zb-radius').value);
+    draft.width = Number(el('zb-width').value);
+    draft.align = el('zb-align').value;
+    draft.customCss = el('zb-css').value.slice(0, 8000);
+    el('zb-tint-v').value = draft.tint; el('zb-radius-v').value = draft.radius; el('zb-width-v').value = draft.width;
+    var r = findRecipe(sel);
+    if (r) { r.look = { preset: draft.preset, tint: draft.tint, radius: draft.radius, width: draft.width, align: draft.align, customCss: draft.customCss }; }
+    render();
+  }
+  function call(name, args) {
+    return ZC.callTool(name, args || {}).then(function (res) {
+      var text = '';
+      try {
+        var c = res && res.content;
+        if (c && c.length && typeof c[0].text === 'string') text = c[0].text;
+      } catch (e) {}
+      if (res && res.isError) throw new Error(text || (name + ' \u5931\u8D25'));
+      var parsed = null;
+      try { parsed = JSON.parse(text); } catch (e) {}
+      return parsed !== null && typeof parsed === 'object' ? parsed : { raw: text };
+    });
+  }
+  function applyLook(look, doneMsg) {
+    if (busy || !ZC) return;
+    busy = true;
+    call('apply_options', { bubble: look }).then(function () {
+      state.active = { preset: look.preset, tint: look.tint, radius: look.radius, width: look.width, align: look.align, customCss: look.customCss };
+      var match = allRecipes().filter(function (r) {
+        return r.look.preset === state.active.preset && r.look.tint === state.active.tint && r.look.radius === state.active.radius
+          && r.look.width === state.active.width && r.look.align === state.active.align && (r.look.customCss || '') === (state.active.customCss || '');
+      });
+      state.activeRecipeId = match.length ? match[0].id : null;
+      render();
+      toast(doneMsg || '\u5DF2\u5E94\u7528\u5230\u804A\u5929\u754C\u9762');
+    }).catch(function (err) { note('\u5E94\u7528\u5931\u8D25: ' + (err && err.message ? err.message : err)); })
+      .then(function () { busy = false; });
+  }
+  el('zb-apply').addEventListener('click', function () { if (draft) applyLook(draft); });
+  el('zb-reset').addEventListener('click', function () { applyLook({ preset: 'default', tint: 28, radius: 12, width: 70, align: 'right', customCss: '' }, '\u5DF2\u6062\u590D ZCode \u539F\u7248\u6C14\u6CE1'); });
+  el('zb-save').addEventListener('click', function () {
+    if (busy || !ZC || !draft) return;
+    busy = true;
+    var payload = { name: el('zb-name').value || (findRecipe(sel) ? findRecipe(sel).name : ''), look: draft };
+    if (findRecipe(sel) && !findRecipe(sel).builtin) payload.id = sel;
+    call('save_bubble_recipe', payload).then(function (out) {
+      var saved = out.recipe || out;
+      if (saved && saved.id) {
+        var list = state.saved.filter(function (r) { return r.id !== saved.id; });
+        list.push(saved);
+        state.saved = list;
+        toast('\u5DF2\u4FDD\u5B58\u914D\u65B9: ' + (saved.name || ''));
+        select(saved.id);
+      } else {
+        toast('\u5DF2\u4FDD\u5B58');
+      }
+    }).catch(function (err) { note('\u4FDD\u5B58\u5931\u8D25: ' + (err && err.message ? err.message : err)); })
+      .then(function () { busy = false; });
+  });
+  el('zb-delete').addEventListener('click', function () {
+    if (busy || !ZC) return;
+    var r = findRecipe(sel);
+    if (!r || r.builtin) return;
+    busy = true;
+    call('delete_bubble_recipe', { id: r.id }).then(function () {
+      state.saved = state.saved.filter(function (x) { return x.id !== r.id; });
+      toast('\u5DF2\u5220\u9664: ' + r.name);
+      select('default');
+    }).catch(function (err) { note('\u5220\u9664\u5931\u8D25: ' + (err && err.message ? err.message : err)); })
+      .then(function () { busy = false; });
+  });
+  ['zb-tint', 'zb-radius', 'zb-width', 'zb-align', 'zb-css'].forEach(function (id) {
+    el(id).addEventListener('input', patchDraft);
+  });
+
+  function applyTheme() {
+    var t = null;
+    try { t = (ZC && ZC.hostContext && ZC.hostContext.theme) || (ZC && ZC.theme); } catch (e) {}
+    if (t) document.documentElement.setAttribute('data-theme', String(t).indexOf('dark') >= 0 ? 'dark' : 'light');
+  }
+  function bootWithBridge() {
+    applyTheme();
+    try { if (ZC.onhostcontextchanged) ZC.onhostcontextchanged = applyTheme; } catch (e) {}
+    call('bubble_studio_state', {}).then(function (s) {
+      state = s;
+      var want = null;
+      try { want = ZC.widgetState && ZC.widgetState.sel; } catch (e) {}
+      select(want && findRecipe(want) ? want : (state.activeRecipeId && findRecipe(state.activeRecipeId) ? state.activeRecipeId : 'default'));
+      setEnabled(true);
+      render();
+    }).catch(function (err) {
+      el('zb-active').textContent = '\u72B6\u6001\u8BFB\u53D6\u5931\u8D25';
+      note('\u8BFB\u53D6\u5931\u8D25: ' + (err && err.message ? err.message : err));
+    });
+  }
+  function boot() {
+    ZC = window.zcode || null;
+    if (ZC && typeof ZC.callTool === 'function' && typeof ZC.ready === 'function') {
+      ZC.ready().then(bootWithBridge, bootWithBridge);
+      return;
+    }
+    if (ZC && typeof ZC.callTool === 'function') { bootWithBridge(); return; }
+    // Standalone open (plain browser): local preview with the builtin seed.
+    window.setTimeout(function () {
+      if (state) return;
+      state = { active: { preset: 'default', tint: 28, radius: 12, width: 70, align: 'right' }, activeRecipeId: 'default',
+        builtins: [], saved: [] };
+      state.builtins = [
+        { id: 'default', name: 'ZCode \u539F\u7248', builtin: true, look: state.active },
+        { id: 'accent', name: '\u4E3B\u9898\u5F3A\u8C03\u8272', builtin: true, look: { preset: 'accent', tint: 45, radius: 12, width: 70, align: 'right' } },
+        { id: 'glass', name: '\u73BB\u7483\u62DF\u6001', builtin: true, look: { preset: 'glass', tint: 28, radius: 16, width: 70, align: 'right' } },
+        { id: 'outline', name: '\u63CF\u8FB9', builtin: true, look: { preset: 'outline', tint: 40, radius: 12, width: 70, align: 'right' } },
+        { id: 'flat', name: '\u6241\u5E73', builtin: true, look: { preset: 'flat', tint: 28, radius: 10, width: 70, align: 'right' } }
+      ];
+      select('default');
+      el('zb-active').textContent = '\u672A\u8FDE\u63A5 ZCode \u5BBF\u4E3B \u2014 \u4EC5\u672C\u5730\u9884\u89C8';
+      note('\u8BF7\u5728 ZCode \u4F1A\u8BDD\u4E2D\u6253\u5F00\u6C14\u6CE1\u5DE5\u574A\u4EE5\u542F\u7528\u5E94\u7528/\u4FDD\u5B58');
+    }, 1200);
+  }
+  boot();
+})();
+</script>
+</body>
+</html>`;
+}
+
+// dist/mcp/server.js
 init_version();
 delete process.env.ZCODE_BEAUTIFY_DATA_DIR;
 delete process.env.WORKBUDDY_BEAUTIFY_DATA_DIR;
 var absoluteExisting = (p2) => {
-  if (!path13.isAbsolute(p2))
+  if (!path14.isAbsolute(p2))
     throw new Error(`\u9700\u8981\u7EDD\u5BF9\u8DEF\u5F84: ${p2}`);
   if (!existsSync3(p2))
     throw new Error(`\u8DEF\u5F84\u4E0D\u5B58\u5728: ${p2}`);
   return p2;
 };
 function cliJsPath() {
-  const serverFile = path13.resolve(process.argv[1] ?? "");
-  const cliJs = path13.join(path13.dirname(serverFile), "..", "cli.js");
-  return path13.basename(serverFile) === "server.js" && existsSync3(cliJs) ? cliJs : null;
+  const serverFile = path14.resolve(process.argv[1] ?? "");
+  const cliJs = path14.join(path14.dirname(serverFile), "..", "cli.js");
+  return path14.basename(serverFile) === "server.js" && existsSync3(cliJs) ? cliJs : null;
 }
 function bootstrapServe() {
   try {
@@ -150129,6 +151800,9 @@ var TOOL_NAMES = [
   "set_background",
   "import_scene_wallpaper",
   "apply_options",
+  "bubble_studio_state",
+  "save_bubble_recipe",
+  "delete_bubble_recipe",
   "refresh_theme",
   "reset_appearance",
   "beautify_status",
@@ -150136,6 +151810,13 @@ var TOOL_NAMES = [
   "disable_experimental",
   "repair_launchers"
 ];
+server.registerResource("bubble-studio", BUBBLE_STUDIO_URI, {
+  title: "\u6C14\u6CE1\u5DE5\u574A (Bubble Studio)",
+  description: "Interactive gallery of chat-bubble recipes: preview, try on, fine-tune and save bubble looks.",
+  mimeType: "text/html;profile=mcp-app"
+}, async (uri) => ({
+  contents: [{ uri: uri.href, mimeType: "text/html;profile=mcp-app", text: bubbleStudioHtml() }]
+}));
 server.registerTool("set_background", {
   title: "Set ZCode wallpaper",
   description: "Set the ZCode desktop client's background wallpaper image and adapt the UI colors with Material Design 3 (Monet) dynamic color. Accepts a static image OR a Wallpaper Engine scene wallpaper (.pkg / workshop directory) \u2014 scene inputs are rendered, recorded and looped automatically. ZCode must be running with the CDP debug port (see zcode-beautify launch).",
@@ -150203,7 +151884,7 @@ function statSizeMb(file2) {
 }
 server.registerTool("apply_options", {
   title: "Tune ZCode appearance",
-  description: "Adjust the live ZCode appearance without changing the wallpaper: blur radius, dim level, sidebar-only extra darkening (\u4FA7\u8FB9\u680F\u538B\u6697), Monet dynamic colors on/off, wallpaper visibility (translucent vs opaque surfaces), the user chat bubble look, and the sidebar session running-indicator icon (\u8FD0\u884C\u4E2D\u56FE\u6807). Only the provided values change; the rest keep their current setting.",
+  description: "Adjust the live ZCode appearance without changing the wallpaper: blur radius, dim level, sidebar-only extra darkening (\u4FA7\u8FB9\u680F\u538B\u6697), Monet dynamic colors on/off, wallpaper visibility (translucent vs opaque surfaces), the user chat bubble look, and the sidebar session running-indicator icon (\u8FD0\u884C\u4E2D\u56FE\u6807). Only the provided values change; the rest keep their current setting. When `bubble` is set, ZCode 3.16+ additionally opens the interactive Bubble Studio gallery (\u6C14\u6CE1\u5DE5\u574A) where the user can preview every recipe, fine-tune tint/radius/width/alignment/custom CSS and save their own.",
   inputSchema: {
     blur: external_exports.number().min(0).max(100).optional().describe("Wallpaper blur radius in px"),
     dim: external_exports.number().min(0).max(100).optional().describe("Wallpaper darkening 0-100"),
@@ -150230,22 +151911,102 @@ server.registerTool("apply_options", {
     chat_width_cap_rem: external_exports.number().min(0).max(120).optional().describe("Conversation column width ceiling in rem (\u6D88\u606F\u6D41\u5BBD\u5EA6\u4E0A\u9650). 0 = stock responsive width; 40-120 widens the column (78 \u2248 wide, 100+ \u2248 near full width on large windows). The column still tracks window resizes \u2014 only the ceiling changes"),
     chat_width_inset_rem: external_exports.number().min(0).max(24).optional().describe("Side inset in rem for the column width formula at the wide tier (stock 24; smaller = wider; default 12 when a cap is set). Only meaningful with chat_width_cap_rem > 0"),
     chat_hide_elapsed_decimal: external_exports.boolean().optional().describe('Hide the decimal in the running elapsed time under the conversation (\u8017\u65F6\u79D2\u6570\u53BB\u5C0F\u6570): true rewrites the live working-row seconds from "53.4 \u79D2" to "53 \u79D2"; false restores stock'),
-    chat_drag_resize: external_exports.boolean().optional().describe("Drag handles on both edges of the conversation column (\u4E24\u4FA7\u62D6\u62FD\u8C03\u5BBD): true mounts two hidden vertical strips \u2014 hover shows an accent line, dragging resizes the column width symmetrically, double-clicking a strip resets to the tier setting. The dragged width persists locally and outranks chat_width_cap_rem; false removes the strips")
+    chat_drag_resize: external_exports.boolean().optional().describe("Drag handles on both edges of the conversation column (\u4E24\u4FA7\u62D6\u62FD\u8C03\u5BBD): true mounts two hidden vertical strips \u2014 hover shows an accent line, dragging resizes the column width symmetrically, double-clicking a strip resets to the tier setting. The dragged width persists locally and outranks chat_width_cap_rem; false removes the strips"),
+    chat_session_hover: external_exports.boolean().optional().describe("\u4F1A\u8BDD\u6982\u89C8\u60AC\u505C\u5361: true shows a preview card when the mouse rests on a sidebar session row, listing that conversation's real user prompts (oldest \u2192 newest, newest bold, served from ZCode's local session db by the beautify daemon; ZCode's own workspace hover card is hidden while on); false restores stock"),
+    chat_session_hover_side: external_exports.boolean().optional().describe("\u4FA7\u680F\u6807\u9898\u60AC\u505C: whether the LEFT task-list session rows trigger the \u4F1A\u8BDD\u6982\u89C8 hover card (true, default); false = only the conversation's turn ticks (\u5BF9\u8BDD\u6982\u8981\u6807\u793A) open it and the sidebar keeps ZCode's own workspace hover card. Only meaningful with chat_session_hover on"),
+    chat_session_hover_max: external_exports.number().min(1).max(60).optional().describe("\u4F1A\u8BDD\u6982\u89C8\u5361\u6700\u591A\u663E\u793A\u51E0\u6761\u63D0\u95EE (1-60, default 10): the card grows up to this many visible rows; excess prompts live in the card's scrollable list (auto-landed on the newest). Only meaningful with chat_session_hover on"),
+    chat_composer_fade: external_exports.number().min(0).max(100).optional().describe("\u8F93\u5165\u6846\u900F\u660E\u5EA6: 0 = stock composer background, 1-100 fades the chat input box's paint toward transparent so the wallpaper shows through (text and border untouched)"),
+    chat_loading_icon: external_exports.object({
+      mode: external_exports.enum(["default", "classic", "image"]).optional().describe("\u4F1A\u8BDD\u5E95\u90E8\u52A0\u8F7D\u56FE\u6807: default = ZCode 3.18's stock brand-colored orbit glyph, classic = the pre-3.18 3\xD73 pixel-wave dots, image = a user picture/GIF"),
+      image_path: external_exports.string().optional().describe("Absolute path of the image/GIF to paint over the loading icon (resolved serve-side; required when mode = image)"),
+      spin: external_exports.boolean().optional().describe("Keep a CSS rotation on the replaced icon (true, default \u2014 good for static images; false for animated GIFs)"),
+      size: external_exports.number().min(10).max(28).optional().describe("Icon size in px (stock slot 16); only meaningful for image mode \u2014 classic is a fixed 13px grid")
+    }).optional().describe("Conversation-footer loading icon look; omitted fields keep their current value"),
+    list_initial: external_exports.number().min(0).max(100).optional().describe("\u4F1A\u8BDD\u5217\u8868\u5206\u9875: how many session rows a project card shows when expanded (\u521D\u59CB\u5C55\u5F00\u6761\u6570, 1-100). 0 = stock behaviour (ZCode's hardcoded 5, +5 per click, no collapse)"),
+    list_step: external_exports.number().min(1).max(100).optional().describe("\u4F1A\u8BDD\u5217\u8868\u5206\u9875: how many rows each \u663E\u793A\u66F4\u591A click adds (\u6BCF\u6B21\u52A0\u8F7D\u6761\u6570, 1-100). Only meaningful with list_initial > 0"),
+    list_collapse: external_exports.boolean().optional().describe("\u4F1A\u8BDD\u5217\u8868\u5206\u9875: whether a \u6536\u8D77 button sits next to \u663E\u793A\u66F4\u591A (true, default) snapping the list back to list_initial rows; false hides it. Only meaningful with list_initial > 0"),
+    fab: external_exports.object({
+      mode: external_exports.enum(["default", "image"]).optional().describe("\u8BBE\u7F6E\u6309\u94AE (panel-opener FAB): default = the stock \u{1F3A8} ball, image = a user picture/GIF"),
+      image_path: external_exports.string().optional().describe("Absolute path or file name of the image for the FAB (resolved serve-side; required when mode = image; \u22642MB when uploaded via the panel)"),
+      size: external_exports.number().min(20).max(64).optional().describe("Ball diameter in px (stock 34)")
+    }).optional().describe("Panel-opener button look; omitted fields keep their current value")
   }
-}, async ({ blur, dim, sidebar_dim, monet, wallpaper_visible, fit, bubble, spinner, chat_width_cap_rem, chat_width_inset_rem, chat_hide_elapsed_decimal, chat_drag_resize }) => {
+}, async ({ blur, dim, sidebar_dim, monet, wallpaper_visible, fit, bubble, spinner, chat_width_cap_rem, chat_width_inset_rem, chat_hide_elapsed_decimal, chat_drag_resize, chat_session_hover, chat_session_hover_side, chat_session_hover_max, chat_composer_fade, chat_loading_icon, list_initial, list_step, list_collapse, fab }) => {
   try {
     if (!experimentalEnabled(loadConfig()))
       return disabledNotice();
-    const bubbleLook = bubble === void 0 ? void 0 : Object.fromEntries(Object.entries(bubble).filter(([, v]) => v !== void 0));
+    const bubbleLook = bubble === void 0 ? void 0 : bubbleLookPatchFromTool(bubble);
     const taskSpinnerLook = spinner === void 0 ? void 0 : Object.fromEntries(Object.entries(spinner).filter(([, v]) => v !== void 0).map(([k, v]) => [k === "image_path" ? "image" : k === "unread_image_path" ? "unreadImage" : k === "error_image_path" ? "errorImage" : k, v]));
-    const chatLook = chat_width_cap_rem === void 0 && chat_width_inset_rem === void 0 && chat_hide_elapsed_decimal === void 0 && chat_drag_resize === void 0 ? void 0 : {
+    const chatLook = chat_width_cap_rem === void 0 && chat_width_inset_rem === void 0 && chat_hide_elapsed_decimal === void 0 && chat_drag_resize === void 0 && chat_composer_fade === void 0 && chat_session_hover === void 0 && chat_session_hover_side === void 0 && chat_session_hover_max === void 0 ? void 0 : {
       ...chat_width_cap_rem !== void 0 ? { widthCapRem: chat_width_cap_rem } : {},
       ...chat_width_inset_rem !== void 0 ? { widthInsetRem: chat_width_inset_rem } : {},
       ...chat_hide_elapsed_decimal !== void 0 ? { hideElapsedDecimal: chat_hide_elapsed_decimal ? 1 : 0 } : {},
-      ...chat_drag_resize !== void 0 ? { dragResize: chat_drag_resize ? 1 : 0 } : {}
+      ...chat_drag_resize !== void 0 ? { dragResize: chat_drag_resize ? 1 : 0 } : {},
+      ...chat_session_hover !== void 0 ? { sessionHover: chat_session_hover ? 1 : 0 } : {},
+      ...chat_session_hover_side !== void 0 ? { sessionHoverSide: chat_session_hover_side ? 1 : 0 } : {},
+      ...chat_session_hover_max !== void 0 ? { sessionHoverMax: chat_session_hover_max } : {},
+      ...chat_composer_fade !== void 0 ? { composerFade: chat_composer_fade } : {}
     };
-    const windows = await applyColorsOnly({ blur, dim, sidebarDim: sidebar_dim, monet, wallpaperVisible: wallpaper_visible, fit, bubbleLook, taskSpinnerLook, chatLook });
-    return { content: [{ type: "text", text: `Appearance updated in ${windows} window(s).` }] };
+    const chatLoadLook = chat_loading_icon === void 0 ? void 0 : Object.fromEntries(Object.entries(chat_loading_icon).filter(([, v]) => v !== void 0).map(([k, v]) => [k === "image_path" ? "image" : k, v]));
+    const listPaging = list_initial === void 0 && list_step === void 0 && list_collapse === void 0 ? void 0 : {
+      ...list_initial !== void 0 ? { initial: list_initial } : {},
+      ...list_step !== void 0 ? { step: list_step } : {},
+      ...list_collapse !== void 0 ? { collapse: list_collapse ? 1 : 0 } : {}
+    };
+    const fabLook = fab === void 0 ? void 0 : Object.fromEntries(Object.entries(fab).filter(([, v]) => v !== void 0).map(([k, v]) => [k === "image_path" ? "image" : k, v]));
+    const windows = await applyColorsOnly({ blur, dim, sidebarDim: sidebar_dim, monet, wallpaperVisible: wallpaper_visible, fit, bubbleLook, taskSpinnerLook, chatLook, chatLoadLook, listPaging, fabLook });
+    return {
+      content: [{ type: "text", text: `Appearance updated in ${windows} window(s).` }],
+      ...bubble !== void 0 ? { _meta: bubbleStudioResultMeta() } : {}
+    };
+  } catch (err) {
+    return { content: [{ type: "text", text: `Failed: ${err.message}` }], isError: true };
+  }
+});
+server.registerTool("bubble_studio_state", {
+  title: "Bubble Studio state",
+  description: "Snapshot for the Bubble Studio gallery (\u6C14\u6CE1\u5DE5\u574A): the currently applied bubble look, its matching recipe id, the built-in presets and the user's saved recipes. Primarily consumed by the studio page; harmless to call directly.",
+  inputSchema: {}
+}, async () => {
+  const state = bubbleStudioState();
+  return { content: [{ type: "text", text: JSON.stringify(state) }] };
+});
+server.registerTool("save_bubble_recipe", {
+  title: "Save bubble recipe",
+  description: 'Save a chat-bubble look as a named recipe for the Bubble Studio gallery (\u6C14\u6CE1\u5DE5\u574A). With `look` omitted it saves the currently applied look ("save what is live now"). Sending an existing saved recipe `id` updates it in place. Opens the studio gallery on UI-capable hosts (ZCode 3.16+).',
+  inputSchema: {
+    name: external_exports.string().min(1).max(40).optional().describe("Recipe display name (defaults to \u6C14\u6CE1\u914D\u65B9)"),
+    id: external_exports.string().optional().describe("Id of an existing saved recipe to update; omit to create a new one"),
+    look: external_exports.object({
+      preset: external_exports.enum(["default", "accent", "glass", "outline", "flat", "custom"]).optional(),
+      tint: external_exports.number().min(0).max(100).optional(),
+      radius: external_exports.number().min(4).max(24).optional(),
+      width: external_exports.number().min(40).max(90).optional(),
+      align: external_exports.enum(["right", "left"]).optional(),
+      custom_css: external_exports.string().max(8e3).optional()
+    }).optional().describe("The look to store; defaults to the currently applied bubble look")
+  }
+}, async ({ name, id, look }) => {
+  try {
+    const recipe = saveBubbleRecipe({ name, id, look });
+    return {
+      content: [{ type: "text", text: JSON.stringify({ saved: true, recipe }) }],
+      _meta: bubbleStudioResultMeta()
+    };
+  } catch (err) {
+    return { content: [{ type: "text", text: `Failed: ${err.message}` }], isError: true };
+  }
+});
+server.registerTool("delete_bubble_recipe", {
+  title: "Delete bubble recipe",
+  description: "Delete a saved Bubble Studio recipe by id. Built-in presets cannot be deleted.",
+  inputSchema: {
+    id: external_exports.string().describe("Id of the saved recipe (from bubble_studio_state)")
+  }
+}, async ({ id }) => {
+  try {
+    deleteBubbleRecipe(id);
+    return { content: [{ type: "text", text: JSON.stringify({ deleted: true, id }) }] };
   } catch (err) {
     return { content: [{ type: "text", text: `Failed: ${err.message}` }], isError: true };
   }

@@ -1,8 +1,10 @@
-# zcode-beautify
+# zcode-beautify (fork)
 
 [English](README.md) | [中文](README.zh-CN.md)
 
-Beautify the **ZCode desktop client**: use any image — or any **video / Wallpaper Engine scene wallpaper** — as a background wallpaper and adapt the whole UI with Material Design 3 (Monet) dynamic color; restyle the chat area (message bubbles, conversation-column width, a large-session smooth mode) — plus a live settings panel for real-time tuning.
+Fork of [Logocceai/zcode-beautify](https://github.com/Logocceai/zcode-beautify), actively maintained by [Mc-GrowlR](https://github.com/Mc-GrowlR) — this is where the feature development continues (see [CHANGES.md](CHANGES.md) for the full 0.3.0 → 6.1.x history).
+
+Beautify the **ZCode desktop client**: use any image — or any **video / Wallpaper Engine scene wallpaper** — as a background wallpaper and adapt the whole UI with Material Design 3 (Monet) dynamic color; restyle the chat area (message bubbles, conversation-column width & drag handles, a large-session smooth mode, the working-row loading icon, composer transparency) — plus a live settings panel for real-time tuning. On top of the upstream base this fork adds: dynamic wallpapers (WE scene / video import with seamless loops), the local Wallpaper Engine library browser, scheduled rotation playlists, the full chat-area restyling suite, ZCode 3.18 support, and dual-client coverage (ZCode + WorkBuddy).
 
 > 🧩 **Since 0.5.0 the same plugin also targets the WorkBuddy desktop client.** Pass `--target workbuddy` (or install it through the bundled `.codebuddy-plugin` manifest, which sets `BEAUTIFY_TARGET=workbuddy`): the wallpaper layer and Monet palette are re-mapped onto WorkBuddy's `--wb-*` design tokens. Ports (9223/9333 CDP, 9224/9334 API), data dirs and launcher entries are isolated per client, so both can run at once. Chat-area extras stay ZCode-only — they bind to ZCode's DOM, and the panel hides those tabs automatically under WorkBuddy.
 
@@ -21,17 +23,20 @@ Beautify the **ZCode desktop client**: use any image — or any **video / Wallpa
 ### Chat-area restyling
 
 - **Chat bubbles** — five presets for your own message bubbles (`accent` tint, `glass` blur, `outline`, `flat`, or stock `default`), plus tint strength, corner radius, width and alignment controls, a bubble style editor with a saved personal style library, and custom CSS support. Colors reference live theme tokens, so a Monet re-theme restyles the bubbles too.
+- **Bubble Studio** (气泡工坊, ZCode 3.16+) — an interactive gallery page built on ZCode's MCP Apps UI: whenever the agent changes your bubble look, the tool result opens an in-conversation studio where every recipe previews side by side; click one to try it on (the live chat restyles instantly), fine-tune tint / radius / width / alignment / custom CSS, and save your own named recipes (kept in `bubble-recipes.json`, up to 50). It is also available as a persistent side-pane surface; on hosts without UI-plugin support everything gracefully falls back to the plain text card.
 - **Conversation width** — widen or narrow the message column: stock / wide tiers / three narrow tiers / fully custom (cap + inset in rem). Injected as a **formula** (rem cap + `calc()` inset) rather than a fixed width, so it keeps following window resizes exactly like the native layout and never overflows into the input bar.
 - **Drag-to-resize handles** (off by default) — two hidden vertical strips hugging the conversation column edges: hover reveals a 3px accent line, dragging resizes the column symmetrically (DeepSeek-style), double-click resets to the width tier, Esc cancels a drag. The dragged width persists locally and outranks the tiers; before the first drag the layout is pixel-identical to stock.
 - **Large-session smooth mode** (off by default) — message rows far outside the viewport are measured first, then skipped for layout and painting (`content-visibility:auto` with accurate `contain-intrinsic-size`). On a 51 MB session clone this cut first-open time by **~41%** with zero scrollbar distortion; long chats scroll smoother.
 - **Elapsed-time decimal trim** (off by default) — the working-row elapsed time under the conversation drops its fractional seconds ("53.4 秒" → "53 秒"), rewritten live; toggling off restores stock.
+- **Conversation-footer loading icon** — ZCode 3.18 replaced the working row's leading icon with a brand-colored orbit glyph; switch back to the **pre-3.18 3×3 pixel-wave dots** (rebuilt in pure CSS, colors follow the wallpaper palette) or replace it with a **custom picture / animated GIF** (optional rotation, 10-28px).
+- **Composer transparency** — fade the chat input box's background (0 = solid, 100 = fully transparent, 50 ≈ the stock half-tint) so the wallpaper shows through underneath; text, border and focus ring stay untouched, and the light/dark theme plus Monet palette keep working.
 
 ### Panel & service
 
 - **Live settings panel** — a draggable panel inside ZCode with three tabs: **Wallpaper** (grouped library, import with progress and dependency guidance, current look), **Rotation** (playlists), and **Settings** — blur/dim sliders, framing modes, Monet and wallpaper-visibility toggles, chat-area masks (dim / gradient / veil), day-night eye care, recording resolution, config export/import, recent history, and reset. Changes preview instantly and persist.
 - **Zero-touch serve** — the MCP server starts the background service automatically when ZCode launches, so the panel is simply always there.
 - **Self-healing launch entries** — while `serve` runs, every ZCode launch entry (desktop / start-menu / taskbar shortcuts — OneDrive-redirected folders included — plus the `zcode://` protocol handler and Explorer context-menu verbs) is kept carrying `--remote-debugging-port` automatically, so the theme survives ZCode restarts *and* updater-rebuilt shortcuts. `repair-launchers` scans and fixes them on demand with a structured report (machine-wide entries are reported, not modified). The theme itself also survives renderer reloads, and the last look is cached in `localStorage` as a fallback.
-- **Conversation control** — bundled slash commands `/beautify` and `/bubble`, plus MCP tools (`set_background`, `import_scene_wallpaper`, `apply_options`, `repair_launchers`, …), let the ZCode agent set the wallpaper, tune the theme, or restyle your chat bubbles from a plain-language description.
+- **Conversation control** — bundled slash commands `/beautify` and `/bubble`, plus MCP tools (`set_background`, `import_scene_wallpaper`, `apply_options`, `repair_launchers`, …), let the ZCode agent set the wallpaper, tune the theme, or restyle your chat bubbles from a plain-language description — bubble changes additionally open the interactive Bubble Studio gallery on ZCode 3.16+.
 
 ## How it works
 
@@ -47,6 +52,10 @@ ZCode is an Electron app whose UI theming is driven by Tailwind v4 `--color-*` C
 
 It never modifies ZCode's installation files, so ZCode upgrades are unaffected.
 
+### WorkBuddy component tuning
+
+WorkBuddy paints a few shell containers with literal colors the `--wb-*` tokens cannot reach — the conversation sidebar and composer are `rgb(31,31,31)`, the composer outline `#333`, the menu-bar labels `rgba(228,228,228,.37)` — and its message renderer keeps a separate `--cr-*` text family that does not follow the design system. The panel's **组件 (Components)** tab (WorkBuddy only) exposes that gap as a small set of switches: sidebar surface, menu-bar label strength, composer radius/surface/outline, tool-card radius, a `--cr-*` → `--wb-*` bridge, plus shared control and modal radii. The master switch is off by default (zero injection) and every color is derived with `color-mix(in srgb, var(--wb-*) N%, transparent)`, so light/dark themes and wallpaper palettes are followed automatically.
+
 ## Requirements
 
 - Node.js ≥ 20 available on your PATH.
@@ -55,7 +64,7 @@ It never modifies ZCode's installation files, so ZCode upgrades are unaffected.
 
 ## Two packages, both installable by handing an AI the link
 
-Give your AI agent just <https://github.com/Logocceai/zcode-beautify> — it
+Give your AI agent just <https://github.com/Mc-GrowlR/zcode-beautify-for-wallpaper-engine> — it
 clones the repo and follows the instructions inside. Pick the right one:
 
 | | **Plugin package** (`INSTALL-FOR-AI.md`) | **Skill pack** (`skill-pack/SKILL.md`) |
@@ -68,13 +77,13 @@ clones the repo and follows the instructions inside. Pick the right one:
 Copy-paste prompt for the plugin:
 
 ```text
-https://github.com/Logocceai/zcode-beautify
+https://github.com/Mc-GrowlR/zcode-beautify-for-wallpaper-engine
 Install this beautify plugin into my ZCode desktop client. Follow
 INSTALL-FOR-AI.md in the repository.
 ```
 
 Offline? Both packages are attached to the
-[releases page](https://github.com/Logocceai/zcode-beautify/releases) as zips.
+[releases page](https://github.com/Mc-GrowlR/zcode-beautify-for-wallpaper-engine/releases) as zips.
 
 ## Install (manual paths)
 
@@ -89,8 +98,8 @@ The published repo ships prebuilt single-file bundles in `dist/`, so no build st
 ### Option B — clone and run
 
 ```bash
-git clone https://github.com/Logocceai/zcode-beautify.git
-cd zcode-beautify
+git clone https://github.com/Mc-GrowlR/zcode-beautify-for-wallpaper-engine.git
+cd zcode-beautify-for-wallpaper-engine
 node dist/cli.js --help        # prebuilt bundle, zero install
 ```
 
@@ -140,7 +149,10 @@ You can also just type `/beautify <image path>` in ZCode and let the agent do it
 |---|---|
 | `set_background` | Set wallpaper (image or scene) + Monet colors |
 | `import_scene_wallpaper` | Import a WE scene / video wallpaper end-to-end |
-| `apply_options` | Tune blur/dim/monet/visibility/framing, chat width, bubble look — without re-sending the image |
+| `apply_options` | Tune blur/dim/monet/visibility/framing, chat width, bubble look — without re-sending the image. Bubble changes open the Bubble Studio gallery (ZCode 3.16+) |
+| `bubble_studio_state` | Snapshot for the Bubble Studio page: active look, matching recipe id, built-in presets, saved recipes |
+| `save_bubble_recipe` | Save (or update) a named bubble recipe — defaults to the currently applied look |
+| `delete_bubble_recipe` | Delete a saved recipe by id (built-ins are protected) |
 | `refresh_theme` | Re-inject the stored theme after a restart |
 | `reset_appearance` | Remove wallpaper and overrides |
 | `beautify_status` | Show the stored config |
@@ -206,7 +218,7 @@ npm run bundle   # prebuilt single-file bundles (what the repo ships)
 rebuild this beautify capability for **any** Electron app — the CDP plumbing,
 MD3 color extraction, injection templates, live-tuning API, and the pitfall
 list gathered from production. Versioned together with this repo. Grab it from
-the [releases page](https://github.com/Logocceai/zcode-beautify/releases) as a
+the [releases page](https://github.com/Mc-GrowlR/zcode-beautify-for-wallpaper-engine/releases) as a
 zip, or read [`skill-pack/SKILL.md`](skill-pack/SKILL.md) directly.
 
 ## Experimental opt-in (CDP injection)

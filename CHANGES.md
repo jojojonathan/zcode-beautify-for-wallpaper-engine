@@ -9,7 +9,7 @@
 > 0.4.4：`/bubble` 指令——自然语言增改气泡样式；MCP 开放自定义 CSS。
 > 0.4.5：消息流宽度——聊天区可调对话列宽（档位/自定义），公式化注入保持随窗口缩放。
 > 0.4.6：自定义宽度改按钮模式（修复编辑器被 4s 心跳自动收起）+ 新增三档窄宽度 + 安装记录写入器（防 Windows 路径转义事故）。
-> 0.4.7：大会话流畅模式——消息行屏外跳过渲染（content-visibility），大上下文会话打开与滚动更省。
+> 0.4.7：大会话流畅模式——消息行屏外跳过渲染（content-visibility），大上下文会话打开与滚动更省。**6.2.0 生命周期重做（v2）**：旧引擎只加不减的跳过标记在 ZCode 3.18 v4 上出过"部分区域不渲染"事故——跳过时烘烤的 contain-intrinsic-size 在**仍在流式增长的行**上过期，被 v4 虚拟化器当真高度读取，实测总高单次滚动内 86762↔10346 八倍震荡。v2 三条守门：**流式进行中（chat-loading 存在）冻结一切新标记**、**最后一行（下轮增长位）永不标记**、**行回到视口附近即解除标记并清掉占位值**——只对静态行烘烤真实高度，虚拟化器读到的占位值永远是真话；实机验证完结大会话远屏行标记生效且总高稳定、滚回自动解除、流式会话零标记。
 > 0.4.8：运行中图标——会话列表左侧"正在对话"转圈标志可换为图片 / GIF 动图；侧边栏压暗——左侧会话栏可单独加深；关于页检查更新——对照 GitHub Releases 一键查询新版本。
 > 0.4.9：耗时秒数去小数——对话下方"工作中"耗时的秒数不再显示小数位（53.4 秒 → 53 秒）；作者信息改为 fork 维护者 Mc-GrowlR（关于页/插件元数据，上游溯源保留）。
 > 0.5.0：双客户端——同一套引擎现在也支持 WorkBuddy（`--target` 选择目标、端口隔离 9333/9334、`--wb-*` 配色映射、启动屏探针；聊天增强仅 ZCode）。
@@ -64,6 +64,106 @@
 - **成因**：交叉段的第一输入取自源素材末尾（D-f 处），concat 必须等它出帧；主体段帧早已全部解码、堵在 concat 队列里以源分辨率（4K）滞留。
 - **修复**：`makeSeamless` 先用一次 ffprobe 拿宽/高/帧率/时长，估算单遍队列峰值（fps × 主体时长 × 宽 × 高 × 1.5 字节）；超过 2 GB 预算（或探测失败）即切换**两遍流式构建**——pass 1 只渲染 fadeSec 长的交叉段（源尾 + 淡入头部，输入级 `-ss`/`-t`，无 trim 队列），pass 2 把主体段做纯流式重编码，pass 3 concat demuxer `-c copy` + `+faststart` 拼合。输出布局与单遍版完全一致（crossfade + 主体），内存占用与分辨率解耦。
 - **兼容**：估算在预算内（典型 WE 场景 15s 1080p 录制约 1.2 GB）仍走原单遍路径，行为零变化；两遍法中间产物（`*.seg1/2.mp4`、`*.concat.txt`）在 `finally` 中清理，失败不留残余。
+> 6.1.0：组件精修（WorkBuddy 专属）——新增「组件」页，把分析出的写死容器（侧栏 / 输入框 / 菜单栏）与通用组件圆角、`--cr-*` 令牌桥接变成可调项；版本号改走 6.1.x 第三位递增。
+> 6.1.1：ZCode 3.18 适配 + 三个新功能——壁纸取色令牌桥接补 3.18 改名的 `--color-hover`；会话底部加载图标可换（旧版 3×3 波浪 / 自定义图片）；聊天输入框透明度；壁纸库图片列表随面板剩余空间自适应高度。
+> 6.1.2：输入框透明度语义修正（0 = 不透明实底，旧"0=原生"因 3.18 令牌自带半透明而名不副实）+ 面板下拉框全面重做（自绘弹层替换 OS 原生样式）。
+> 6.1.3：旧版波浪图标按 zai-org/ZCode 上游源码忠实重写（9 真实 DOM 点 + 原 keyframes，替换 6.1.1 的渐变模拟——后者渲染又暗又糊）。
+> 6.1.4：修复波浪不动——点规则上的 !important 会压过 CSS 动画（作者 !important > 动画,且 !important 简写清零 animation-delay）,去掉后波浪真正跑起来。
+> 6.3.0：会话列表分页——左侧项目卡会话列表的"初始展开条数 / 每次加载条数"可配置（原生硬编码 5/+5），并新增原生没有的「收起」按钮一键折回初始条数（面板「聊天 → 会话列表分页」+ MCP `list_initial` / `list_step` / `list_collapse`）；设置按钮自定义——右下角悬浮球可换图片/GIF 并调大小（面板「通用 → 设置按钮」+ MCP `fab`）。
+> 6.2.0：气泡工坊（Bubble Studio）——ZCode 3.16+ 的 MCP Apps 交互页：改气泡样式后对话内直接展开画廊，预览/试穿/微调/保存配方；侧栏常驻入口 + 三个新 MCP 工具。会话概览悬停卡——鼠标停在侧边栏会话行约 0.3 秒即弹出该会话的全部提问列表（按用户参考图样式：无头部纯列表、右对齐、行尾短横线、最新一条白色加粗），开启期间替换官方的工作区悬停卡。
+
+## 6.3.0 — 同步上游 6.1.0–6.3.0（本地版本线并入上游 6.x）
+
+> 背景：本地 fork 在 0.6.x 线维护期间，上游 Mc-GrowlR 发布了 6.1.0–6.3.0（WorkBuddy 组件精修、ZCode 3.18 适配、会话底部加载图标、输入框透明度语义修正、面板下拉重做、气泡工坊、会话概览悬停卡、会话列表分页、设置按钮自定义）。本次整体合并上游 6 个提交，**自本版起本地版本号跟随上游 6.x 线**，不再走独立 0.6.x 递增。
+
+- **本地修复全部保留**：0.6.1 视频 OOM、0.6.2 场景导入「Input too short」、0.6.3 桌面壁纸误杀、0.6.4 防重复导入、0.6.5 端口迁移（CDP 9223 / API 9224）。合并后逐一核对：上游新功能代码无一处把旧端口 9222/9223 当默认值硬编码，默认端口仍统一出自 target.ts / inject.ts 的 9223/9224，`loadConfig` 的存量配置迁移逻辑不变。
+- **版本号落位**：package.json / src/version.ts / .zcode-plugin/plugin.json / marketplace.json 统一 6.3.0（.zcode-plugin 本地停在 0.6.4 的漏更一并补齐）；`.codebuddy-plugin/*` 跟随上游原样（上游自身停在 6.1.4 未更）。
+- **验证**：tsc + esbuild 重建 dist；全套 npm test 断言全绿（575 ok）。顺手修复 t21 遗留断言——0.6.5 端口迁移漏改的 `/media/spinner/` 期望值（旧 API 口 9223）改为 9224。t26 在本机进程退出时的 libuv 断言崩溃（exit 127）为 Node v24 / Windows 环境问题，合并前后均可复现、断言本身全绿，与本次合并无关。
+- 上游原始变更详见下方 6.1.0–6.3.0 各节。
+
+## 6.3.0 — 会话列表分页（sidebar list paging）
+
+- **背景**：ZCode 源码 `packages/ui/src/project-sidebar/ProjectTaskRows.tsx` 把项目卡的会话列表硬编码为 `pageSize = chronological ? 20 : 5`——展开只见 5 条、每点一次「显示更多」+5、展开后无法收回（仅置顶区有 showLess）。本功能在 DOM 层重做这套分页：**初始展开条数**与**每次加载条数**都变成可配置（1-100），并提供原生没有的「收起」按钮。
+- **实现**：不 patch React——超出的行写 inline `display:none`；需要更多行时**程序化点击原生「显示更多」**（render-ahead，React 自己的 limit 是唯一合法通道，离散点击同步 flush）；工具条按钮克隆原生 ghost 按钮节点（类名随版本走，主题令牌天然一致）。MutationObserver（childList + rAF 去抖 + `closest('[data-testid="virtual-project-tasks"]')` 预过滤，聊天区 100ms 耗时文本更新不触发重扫）在 React 重建（挂载/limit 增长/行替换）后自动重新收敛；全部写操作幂等（值不变不写），无回环。
+- **两个关键修复**：① render-ahead 把 React limit 抬过总数后原生按钮永久卸载——此时「收起」会藏行而 MORE 判断 `Boolean(native)` 变假，隐藏行将无入口可展开；改为 `native || 有隐藏行`。② 配置变更后旧 observer 闭包拿着旧 init/step（悬停卡同款陈旧闭包坑）——配置发布到 `__zcodeBeautify.listInit/listStep/listCollapse` 槽位，闭包只读槽位；`initial` 变化还会把已展开列表的 visible 重置回新基线（state.baseInit 比对）。
+- **范围与安全**：只接管 `[data-testid="virtual-project-tasks"]` 下的平铺会话列表（ManagedWorktreeCreatingRows 的 py-px 行与其同级、靠"子元素是否 py-px 行"区分，永不分页；置顶/时间线/未读区保持原生）；非 ZCode 目标强制 stock；面板非 ZCode 客户端整个聊天页随官方逻辑移除。
+- **配置**：`listPaging.initial`（0 = 关，回原生 5/+5）/ `listPaging.step` / `listPaging.collapse`（收起按钮，默认开）。面板「聊天 → 会话列表分页」三数值 + 两开关即时生效（300ms 防抖，listKey 快路径不重放壁纸转场）；MCP `apply_options` 新增 `list_initial` / `list_step` / `list_collapse`；serve `sanitize` + `publicConfig` + 两处 bootstrap 组装点 + `baseConfig` 部分合并全接线；reset 脚本清理样式/工具条/标记/observer。
+- **实机首测两坑（用户报告"还是默认的 5 条"暴露，均已修复 + 回归测试）**：① **发现选择器写死层级**——CollapsibleContent 在折叠/展开一个循环后会挂出额外动画包装层，列表容器从第 3 层掉到第 4 层，`> div > div` 三层选择器匹配到 pl-2 包装层（其容器子 div 被当成"行"打了 data-zb-paging），真容器永远没人管；改为深度无关判定——「直接子元素里有原生按钮」或「全部 div 子元素都是 py-px 行（工具条/空态除外）」才算容器，pl-2 因拥有非 py-px 的容器子 div 天然不合格，并在扫描时自动清除旧代误标（连带恢复被藏的行）；② **跨代早退**——serve 重启换上新代码后，页面上残留的旧一代求值留着完全相同的 css/chat/list 键，新求值在终检全等处早退、修复后的 scan 根本不运行（陈旧闭包坑的变体）；加 LIST_PAGING_VER 构建版本戳——终检与音量快路径都要求戳一致，全量应用与 listKey 快路径写回戳，观察器按 ObsStamp 跨代驱逐重绑（悬停卡 hoverTeardown 同款模式）；戳必须标识构建版本而非求值实例（后者会让同构建的每次推送都全量应用、重放壁纸转场）。
+- 测试：t32（normalize / ZCode·WorkBuddy 双目标 payload / jsdom 全生命周期：render-ahead 精确页大小、原生按钮耗尽后 MORE 仍可展开、收起复位、creating 行永不误伤、二次求值换配置走快路径重置基线、initial=0 全清场、**多一层动画包装的深度 4 容器 + 误标恢复、同构建早退保快路径、陈旧戳强制重扫 + 观察器跨代驱逐** / reset / 面板 / serve·MCP·session 接线字符串断言）。
+
+## 6.3.0 — 设置按钮自定义（FAB look）
+
+- **功能**：右下角打开美化面板的悬浮球（默认 🎨 34px 圆球）可在「通用 → 设置按钮」换成自己的图片 / GIF 动图并调整直径（20-64px）。**纯面板侧实现**——FAB 是面板脚本自己的 DOM 节点，由 refresh() 从 /api/config 读 `fabLook` 直接内联样式（图片铺圆球 cover 裁剪、emoji 字号=直径一半），bootstrap 与主题注入完全不经手；图片上传复用 /api/spinner 上传通道（新 slot `"fab"`，落 `spinner/fab.<ext>`，同款 2MB 上限与旧变体清扫），解析走 resolveSpinnerImageRef（/media/spinner 直出带令牌 URL）。
+- **三处细节**：① 大小滑条**两种模式下都可见**——否则恢复默认 🎨 后被放大过的球没有入口调回去；② `fabImageUrl` 在**存在 image ref 时就解析**（不 gate 在 image 模式上）——面板本地切模式要能即时上画，等不到 4s 心跳把推送结果带回来；③ 图片 URL 未就绪（serve 掉线/首刷前）保留 🎨 不清空——空黑球观感像坏了；离线重置恢复原生球。
+- **面板锚点跟球**（用户实测反馈）：面板打开位置的 `bottom: 60px` 按 34px 原生球写死，调大球后面板底边插进球里——改为 `bottom: var(--zb-fab-panel-bottom, 60px)`，applyFabLook 按球径写变量（18px 球边距 + 直径 + 8px 间隙；34px 时恰好还原 60px）。拖拽过的面板带 inline `right/bottom:auto` 优先于变量、保持用户自选位置；「拉回视口」流程清 inline 后重新锚定、变量重新接管。实机：48px 球 → 球顶与面板底边恰 8px 无重叠，34px 还原 60px。
+- **配置**：`fabLook { mode, image, size }`（normalize 镜像 chatLoadLook：image 模式无 ref 降级 default、size 钳 20-64、ref 上限同款）；面板（zb-fab-mode/-pick/-clear/-size 三控件 + 防抖推送）+ MCP `apply_options` 新增 `fab { mode, image_path, size }`（baseConfig 部分合并同款语义）+ serve sanitize/publicConfig。
+- 测试：t33（normalize / serve 三处接线 / jsdom 真面板行为：图片铺球、emoji 随直径缩放、滑条即时预览不推送、恢复默认、离线还原 / MCP schema / baseConfig 合并），全套 npm test exit=0；实机 CDP：上传 slot=fab → 挂载即上图、面板切模式即时生效、48px 截图目检（红色圆测试图铺满球面）。
+
+## 6.2.0 — 会话概览悬停卡（侧边栏 session hover preview）
+
+- **交互**：鼠标停在侧边栏任一会话行（`[data-testid^="task-item-"]`，两种列表渲染器通吃）约 300ms，右侧弹出概览卡：该会话你发过的**每条真实提问**逐行列出（旧→新、单行截断、最新一条白色加粗）。卡片样式按用户提供的参考图重做并按 ZCode 布局取镜像——**无头部纯列表**（去掉标题行与"N 条提问·时间"元信息行）；参考应用的列表在右侧所以其内容右贴，ZCode 列表在左侧，故行**左对齐**（短句贴左、长句占满行宽后行尾省略号），每行行首一枚小灰短横线"–"作行标；**动效**——卡片弹出带 6px 上浮淡入（160ms），行悬停无底色色块、改为文字提亮（120ms 过渡）+ 一条**短指示线**（约八成行宽）随鼠标在行间滑动（140ms top 过渡），当前会话最新一条常驻一条**更长的指示线**（满行宽，悬停线短于当前线——与参考一致）；`prefers-reduced-motion` 下全部动效关闭；卡体是扁平近黑的大圆角面板（无描边；底色仍随 Monet 令牌、color-mix 压暗 16%），列表区可独立滚动（自动滚到最新）。**点击任意提问行直接落到那条提问，且点击后卡片保持显示**——预览接口为每条提问带上其源消息 id（db `message.id`），与对话概要标示（turn navigator）tick 的 `data-turn-id` 同源；点击行＝点对应 tick（原生按钮，滚动到该轮次）：当前会话立即滚过去，别的会话先走侧栏行原生 click 打开、tick 条带挂出后再落到该提问——**落点自愈**：刚打开的会话虚拟列表先是估算行高（实测 9702px 的会话首挂仅按估算渲染），首次跳转才触发真实测量，且 ZCode 的"滚动位置记忆恢复"可能迟到数秒、用过期保存位置把跳转拽到未挂载区域（= 点中间标题后主区空白的两个根因）；因此跳转后持续校验 ~10 秒，视口一旦没有内容行就重新点 tick（第二次 scrollToIndex 按真实测量落准，≤4 次），首点前还要求会话内容行已挂载；**点击不再收起卡片**——跳转后卡仍在原处，可继续点其他提问或阅读，正常关闭路径不变（移出卡片/Esc/点击别处）；若跳转后锚点行被重渲染回收（detached），滚动跟随会直接关卡而不是拿全零矩形乱摆位置；悬停行高亮反馈，加载/降级提示行不可点。移出 180ms 宽限后关闭；Esc / 点击 / 侧栏滚动立即关闭；悬停卡片本身可继续阅读不消失。全部 setTimeout 驱动——遮挡窗口里 rAF 归零的老坑不复发；监听一律 **document 捕获阶段**——ZCode 的 React 根会吞掉冒泡阶段的 mouseover/mouseout（实机首版冒泡绑定收不到事件，原生卡能开只因它挂在 React 根上）。
+- **数据源**：serve 守护进程新增 `GET /api/session-preview`（?t= 令牌鉴权，CORS 同既有约定），只读打开 ZCode 本机会话库 `~/.zcode/cli/db/db.sqlite`（node:sqlite，Node ≥ 22.5；打不开/库缺失时降级为只显示完整标题的兜底卡）。真实提问的判别规则实测校准：role=user 且 part 无 `synthetic`、消息/部件都无 `runtimeMessage`、无 `visibility:"model-only"`、文本非空——613 行原始 user 消息过滤后恰好 8 条真提问，与官方渲染器的 realUser 口径一致。SQL 先按标记粗筛再 JSON 精判，万级大会话也不拖慢悬停。
+- **官方卡替换**：ZCode 3.18 行悬停原生弹出工作区信息卡（`[data-testid="task-row-details"]`，同槽位同延迟，会叠卡）——本功能开启期间将其 `display:none`，关闭即恢复。
+- **配置**：`chatLook.sessionHover`（0/1，默认关）+ 两个新档位——`sessionHoverSide`（0/1，默认 1：左侧任务列表的会话标题是否弹卡；关掉后侧栏恢复官方工作区悬停卡、对话区提问刻度条不受影响）与 `sessionHoverMax`（1-60，默认 10：**卡内只列出最新的 N 条提问**——按参考图改为自然收尾的短列表，更早的不进列表、不再是"N 行可见+其余滚动"的长滚动区；最新一条仍加粗垫底，极大 N 时 CSS 上限只作视口保护）。走 chatLook 通道 → 面板「聊天 → 会话概览」开关/数字框即时生效（300ms 防抖推送，不重放壁纸转场）；MCP `apply_options` 新增 `chat_session_hover` / `chat_session_hover_side` / `chat_session_hover_max`；非 ZCode 目标强制 stock。
+- **令牌轮换韧性**：serve 重启会换令牌而 css/chat 指纹不变，二次注入会走早退快路径、悬停监听留在旧闭包里拿旧令牌 401——两重修复：端点写进 `window.__zcodeBeautify.previewApi` 槽位（每次求值先刷新，旧监听读槽位拿最新令牌），且早退判等加入 `PREV_API === PREVIEW_API`（令牌变化强制走全量应用，与壁纸 URL 轮换同一语义）。跨代接管按闭包身份（`hoverTeardown !== zbHoverClean` 即驱逐重绑），旧代监听不会复活。
+- **实机两坑（用户首测暴露，均已修复 + 回归测试）**：① 面板开关推送走 chat 快路径时，那一代求值在快路径处提前 return、函数区下方的 `var zbHoverCache = {}` 永不执行，但监听器已绑定——悬停必抛 `undefined[id]`、卡片空壳（BUB/RECIPES 同款 var 提升坑第四次复发；状态变量全部上移到快路径之上的初始化区，t30-C6 复现"开→关→开"序列）；② **流式假滚动风暴**——会话输出期间侧边栏列表自己的 overflow 层每秒爆发 ~4 个 scroll 事件（实测 12 秒 47 个，scrollTop 恒 0 根本没滚），任何"滚动即关"的规则都会让 300ms 开卡延迟永远活不完；改为**行矩形比对**——只有真的把悬停行挪动（>2px）的滚动才关卡，风暴实测存活（18 事件下卡片保持打开），t30-C7 双向断言。
+- **注入安全**：卡片全部节点用 `textContent` 构建（提问文本是用户数据，永不 innerHTML）；会话 id 从 data-testid 剥前缀后过 `^[A-Za-z0-9_-]{6,96}$` 白名单再进 SQL 参数化查询。
+- 测试：t30（normalize / payload 令牌与门控 / jsdom 全行为：延迟开卡、行序与加粗、隐藏官方卡、四种关闭路径、降级兜底、开关清场、跨代重绑 / 夹具 db 读取器全断言 / serve·MCP·面板接线，含早退判等站点与模板反斜杠双写防回归）。
+
+## 6.2.0 — 气泡工坊（Bubble Studio，MCP Apps 交互页）
+
+- **对话内画廊**：`apply_options` 带上 `bubble` 参数且成功应用时，工具结果挂 `_meta.ui.resourceUri`（嵌套 + 扁平双键），ZCode 3.16+ 宿主直接在对话流里展开「气泡工坊」页面；旧宿主不受影响，回落为普通文字卡。
+- **画廊页**（`ui://zcode-beautify/bubble-studio.html`，MCP resource，`text/html;profile=mcp-app`）：五个内置预设 + 已保存配方逐卡预览（预览用注入同源的 `--zb-bubble-*` 变量契约与 `.zb-bubble` 友好选择器，逐卡作用域隔离），点卡片选中，滑杆微调着色/圆角/宽度、切换对齐、编辑自定义 CSS，**应用到聊天**经 `apply_options` 即时生效到真实对话区。
+- **配方管理**：`save_bubble_recipe`（部分 look 合并覆盖，省略字段保持原值）/ `delete_bubble_recipe` / `bubble_studio_state`（页面数据源）三个新工具；配方持久化在数据目录 `bubble-recipes.json`（上限 50，内置预设不可删）。
+- **侧栏常驻入口**：`.zcode-plugin/plugin.json` 新增 `ui.surfaces`（id `bubble-studio`，会话级），插件市场/启动页可打开常驻面板。
+- 页面经宿主注入的 `window.zcode` 桥回调 MCP 工具，零外部依赖单文件；widgetState 记住上次选中。
+- **顺手修复存量 bug（apply_options 气泡静默失效）**：工具 schema 的 `custom_css`（snake_case）此前被 handler 原样透传进 camelCase 的 `BubbleLookConfig.customCss`——每次"应用成功"都只是把新样式存成没人读的死键，注入层永远用旧值（2026-11-11 实机事故定位：连改两次绿色气泡均无效果，磁盘里 `custom_css` 绿 / `customCss` 蓝并存）。现经 `bubbleLookPatchFromTool` 做键映射（对齐 spinner 的 `image_path→image`）；t31 C9 防回归。
+- 测试：t31（清单契约 / 模板卫生 / 存储往返 / 真实 stdio 协议含 `_meta.ui` 断言 / snake→camel 映射）。
+
+## 6.1.4 — 修复波浪图标无动画
+
+- **根因（CSS 级联顺序坑）**：6.1.3 给点的基础规则写了 opacity:.15!important——**作者 !important 声明在级联中排在 CSS 动画之上**，关键帧的 opacity 全被冻结在 .15；且 animation 简写成 !important 后隐含 animation-delay:0s!important，把后面非重要的逐点延迟规则全部清零。九个点于是静止发暗。
+- **修复**：点/中心/延迟规则全部去掉 !important（命名空间选择器本无竞争；网格与隐藏原生图形的规则保留）。实机验证：getAnimations() 全部 running、八点延迟 0~0.77s 正确、opacity 实时采样 1.0→0.15 波动。
+- 测试：t29 新增级联防回归断言（点规则不得含 !important）。
+## 6.1.3 — 旧版波浪图标按上游源码忠实重写
+
+- **根因**：6.1.1 的"旧版波浪"是 @property 渐变层模拟(@radial-gradient 九块 + 注册变量驱动 alpha)——渲染出来又暗又糊、点挤成一团。对照 zai-org/ZCode 上游源码(sync a60ba6a7 的 ChatLoadingPixels + styles.css)发现真身是**九个真实 DOM 元素**各自动画 opacity+transform,而非背景渐变。
+- **忠实移植**:13px 3×3 网格(gap 1.3px、圆角 1px、bg-current、色随 --color-foreground);真实 keyframes「0%,100%: opacity .15 / scale(1);35%: opacity 峰值(暗色主题=1,亮色=.75)/ scale(1.08)」、950ms ease-in-out、环序 [0,1,2,5,8,7,6,3] 逐点 110ms 延迟、中心点恒 .07——逐项与上游一致(实机 computed style 校验:dot 动画名/时长/缓动/延迟、网格轨道 3.47px、keyframes 文本全部吻合)。
+- **React 重挂韧性**:9 点网格由注入器挂进 [data-chat-loading-icon] 槽位(原生粒子 SVG 隐藏);rAF 合流的 MutationObserver 监听整棵树,React 每轮重建加载行后自动重挂(实机模拟删除→400ms 内重挂 ✓)。切回新版/图片模式、default 模式与 reset 脚本都会清场(网格移除+观察器断开)。
+- **顺带修复**:isDark 探测正则在 bootstrap 模板串里被反斜杠转义吃掉(s→s,模板串内反斜杠必须双写的老坑)——修复前亮色峰值 .75 恒生效。
+- 测试:t29 重写 classic 断言(jsdom 预置图标槽→9 点 DOM/中心静态/ORBIT 延迟/真实 keyframes 文本/React 清场重挂/default 三重清场/reset 清场)。
+## 6.1.2 — 输入框透明度语义修正 + 面板下拉框重做
+
+- **修复：输入框透明度设 0 仍半透明**。根因有两层：① ZCode 3.18 的 `--color-input` 原生就是 `.5` alpha（壁纸桥接也保持），旧语义"0 = 原生"对用户来说就是半透明——0 应当是"不透明"；② 相对色语法 `rgb(from … r g b)` **省略 alpha 时保留源 alpha**（实测 0 档依旧 .5），必须显式 `/ 1` 才能剥掉。重定义语义：**滑杆即唯一事实来源——0 = 不透明实底，100 = 全透明，50 ≈ ZCode 原生观感**（缺省 50，6.1.1 之前的配置观感不变）；`chatlook` 样式元素改为常驻（其余特性全关时仅含 composer 规则）。
+- **面板下拉框全面重做**。原生 `<select>` 的弹层列表是 OS 绘制的（系统蓝高亮、黑色箭头贴片），CSS 无法主题化。新增 `zbEnhanceSelect` 增强器：原生 select 隐藏（`display:none`）但保留全部状态与 `change` 事件——所有既有监听器零改动；自绘下拉按钮（深底、聚焦/展开蓝边、SVG 箭头展开时旋转 180°）+ 定位弹层（毛玻璃深底、10px 圆角、阴影、选中项左侧 2px 蓝条 + 高亮底、禁用项灰显、120ms 浮现动画、超高翻折到按钮上方）；键盘可用（Enter/↓ 展开、↑↓ 移动、Enter 选中、Esc 关闭）、外点/滚动/缩放自动关闭；按钮最小宽度按最宽选项 canvas 测量（隐藏页签也能测），`value` 属性钩子 + MutationObserver 保证 4s 心跳回显实时同步按钮文案；弹层挂 `<body>`（面板 `overflow:hidden` 会裁切），重注入时清扫上一代孤儿节点。面板全部 9 个下拉框（消息流宽度 / 填充方式 / 气泡预设 / 运行中图标 / 加载图标 / 轮播特效等）统一生效。
+
+## 6.1.1 — ZCode 3.18 适配 + 会话底部加载图标 / 输入框透明度 / 壁纸库列表高度
+
+> 背景：ZCode 3.18.0 更新后实测（CDP 实机 + 解包对比）——注入引擎、面板、聊天气泡、运行中图标的选择器全部仍然有效；3.16→3.18 的 DOM 变化集中在三处：会话列表行 hover 令牌从 `--color-surface-hover` 改名为 `--color-hover`、会话底部"工作中"行的加载图标从 3×3 像素波浪点阵换成品牌色粒子 SVG、输入框从 textarea 改为 contenteditable（`[data-testid="v4-composer-input"]`，外壳 `[data-composer-layout]` 读 `var(--color-input)`）。
+
+- **3.18 适配（壁纸取色跟随 hover）**：ZCode 3.18 的会话列表行 hover 改用 `--color-hover` 令牌（旧名 `--color-surface-hover` 已不被行使用），壁纸 Monet 桥接在 tokens.ts 同时输出两个名字——旧版客户端不受影响，3.18 行 hover 重新跟随壁纸配色。
+- **新配置 `chatLoadLook`（会话底部加载图标）**：3.18 把对话底部"工作中"行首的加载图标换成了品牌色粒子轨道 SVG（`[data-testid="chat-loading"]` 内 `[data-chat-loading-icon]`）。现在可选三种样式：
+  - **新版（原生）**：保持 3.18 自带粒子不动。
+  - **旧版波浪**：恢复 3.18 之前的 3×3 像素点阵波浪——纯 CSS 重建（九个 radial-gradient 网格 + 八个 `@property` 注册的数字变量驱动逐点脉冲，950ms 周期、110ms 逐点延迟、顺时针 0,1,2,5,8,7,6,3、中心点常暗），颜色跟 `--color-foreground`（即壁纸取色），不注入任何 DOM（React 高频重渲该行，DOM 手术会打架）。
+  - **自定义图片**：与运行中图标同一套槽位契约（≤2MB gif/png/webp/jpeg/svg，存 `<dataDir>/spinner/spinner-loading.<ext>`，serve 媒体端点分发），可选保留旋转与 10-28px 尺寸。
+  - 快路径：图标样式独立 style 元素（`-load-style`）+ `loadKey` 状态键，切换图标不再重播壁纸过渡动画；WorkBuddy 强制原生（聊天增强仍仅 ZCode）。
+- **新配置 `chatLook.composerFade`（输入框透明度）**：0-100 把聊天输入框底色向透明混合——`[data-composer-layout]{background-color:color-mix(in srgb, var(--color-input) calc(100% - var(--zb-composer-fade)*1%), transparent)}`。混合的是**活令牌**：明暗主题与壁纸取色都继续生效，文字、光标、边框、焦点环不受影响。滑杆拖动走 `--zb-composer-fade` 内联变量即时预览（与聊天区遮罩同款机制）。
+- **修复：壁纸库·图片列表高度不随收起自适应**。壁纸页的图片卡是页内末块、被 flex 链拉伸填满面板剩余高度，但列表本身钉在"行数偏好"的上限（默认 3 行 ×32px）——把「最近使用 / 壁纸库·动态」收起后，卡片拉高而列表不变，卡片背景在列表下方露出大片空白。现在 `sizeImagesList()` 以面板 body 剩余高度实时计算图片列表的 `max-height`，**行数偏好退化为下限**（空间不够时仍保证你设定的行数）；折叠/展开（含 180ms 折叠动画期间多帧复测）、切页、窗口缩放（ResizeObserver）、列表重渲染都会重算。
+- **MCP**：`apply_options` 新增 `chat_loading_icon { mode, image_path, spin, size }` 与 `chat_composer_fade`（部分补丁语义，与气泡/运行中图标一致）；`/api/spinner` 上传端点新增 `slot: "loading"`。
+- 测试：t29（normalize 钳制、payload 解析与降级、jsdom 实跑 bootstrap 断言波浪 CSS 的 @property/单条逗号动画/九块渐变/居中常暗、图片模式旋转开关、default 快路径清场、面板 UI 与 serve/MCP 接线、行数下限）；t23 补 chatLoadLook 强制原生与 composerFade 归零断言。
+
+## 6.1.0 — 组件精修（WorkBuddy 专属）
+
+> 背景：对 WorkBuddy 5.9.3 的界面组件做了一轮实测（asar 解包 + 运行中 CDP），确认四套样式体系并存（`--vscode-*` → `--cb-*` → `--wb-*` → `--cr-*`），且若干壳层容器直接写死颜色：`.conversation-list` 与 `.cr-input-container` 是 `rgb(31,31,31)`、输入框边框 `#333`、菜单栏文字 `rgba(228,228,228,.37)`。这些位置改 `--wb-*` 令牌无效，必须点名选择器。6.1.0 把它们收敛成一组显式开关。
+
+- **新配置 `componentLook`（组件精修）**：`enabled` 总开关（默认 false，关闭时零注入）+ 8 个数值项 + 1 个开关：
+  - 壳层：`sidebarTone` 侧栏底色浓度（0-100，与 `--wb-bg-secondary` 混合）、`menubarText` 菜单栏文字浓度（20-100）。
+  - 输入框：`composerRadius`（8-40，原生 24）、`composerTone` 底色浓度（0-100）、`composerBorder` 描边浓度（0-100）。
+  - 消息与工具：`toolRadius` 工具卡圆角（0-20，原生 8）、`syncCrTokens` 把 `--cr-*` 文字/链接/滚动条令牌接到 `--wb-*`（修复"半跟随"色差）。
+  - 通用组件：`controlRadius` 控件圆角（覆盖 `--wb-radius-md/lg`，0-20）、`modalRadius` 弹层圆角（覆盖 `--wb-modal-radius`，8-40）。
+- **注入实现**（`src/core/componentLook.ts`）：仅在 `target.tokens === "wb"` 且 `enabled` 时追加一段覆盖表，排在令牌块之后；颜色统一走 `color-mix(in srgb, var(--wb-*) N%, transparent)`，跟随明暗主题与壁纸配色，不引入新的固定色。规则带 `!important`——WorkBuddy 的暗色规则常见 `[data-theme=dark] .conversation-list`（0,2,0），只靠顺序不可靠。
+- **面板**：新增「组件」页（仅 WorkBuddy 显示，ZCode 直接移除页签与面板），按「壳层 / 输入框 / 消息与工具 / 通用组件」四张卡片排列；总开关关闭时滑杆禁用，数值保留可先调好再开。保存走 `POST /api/config { componentLook }`，与气泡 / 运行中图标相同的 250ms 防抖 + 服务端回灌。
+- **版本策略**：自本版起版本号固定为 `6.1.x`——功能/修复只递增第三位（6.1.1、6.1.2…），不再动主次版本号。
 
 ## 0.6.0 — 实验性 CDP 注入改为显式 opt-in
 

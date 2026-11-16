@@ -163,7 +163,7 @@ export interface InjectionPayload {
   /** Video wallpaper audio 0-100 (0/absent = muted). */
   videoVolume?: number;
   /** Zone-refined chat-area masks + column width (聊天界面); absent = stock. */
-  chatLook?: { chatDim: number; maskTop: number; maskBottom: number; frost: number; widthCapRem: number; widthInsetRem: number; perfSmooth: number; hideElapsedDecimal: number; dragResize: number };
+  chatLook?: { chatDim: number; maskTop: number; maskBottom: number; frost: number; widthCapRem: number; widthInsetRem: number; perfSmooth: number; hideElapsedDecimal: number; dragResize: number; sessionHover: number; sessionHoverSide: number; sessionHoverMax: number };
   /** User message bubble look (聊天气泡); absent/preset default = stock. */
   bubbleLook?: BubbleLookConfig;
   /**
@@ -171,12 +171,20 @@ export interface InjectionPayload {
    * resolved paint URL. absent/mode "default" = stock spinner.
    */
   spinnerLook?: { mode: "default" | "image"; image: string; spin: boolean; size: number };
+  chatLoadLook?: { mode: "default" | "classic" | "image"; image: string; spin: boolean; size: number };
+  /** Sidebar session-list paging (会话列表分页); initial 0 = stock behaviour. */
+  listPaging?: { initial: number; step: number; collapse: number };
   /** Defer mounting until the app's startup screen finished (default true). */
   startupClean?: boolean;
   /** False when the client has no chat-area extras wired (non-ZCode targets). */
   chatUi?: boolean;
   /** Startup-screen probe flavour; defaults to zcode's body-class check. */
   startupProbe?: "zcode-body-class" | "workbuddy-skeleton";
+  /**
+   * 会话概览悬停卡 data source: serve's /api/session-preview URL incl. the
+   * per-start token. Empty/absent = feature off (no listeners mounted).
+   */
+  previewApi?: string;
 }
 
 /**
@@ -240,9 +248,35 @@ export function buildBootstrapScript(payload: InjectionPayload): string {
   var VIDEO_SRC = ${JSON.stringify(videoSrc)};
   var WP_IMG = ${JSON.stringify(payload.wallpaperDataUri ?? "")};
   var VOL = Math.max(0, Math.min(100, Math.round(${JSON.stringify(payload.videoVolume ?? 0)})));
-  var CHAT = ${JSON.stringify(JSON.stringify(payload.chatLook ?? { chatDim: 0, maskTop: 0, maskBottom: 0, frost: 0, widthCapRem: 0, widthInsetRem: 0, perfSmooth: 0, hideElapsedDecimal: 0, dragResize: 0 }))};
+  var CHAT = ${JSON.stringify(JSON.stringify(payload.chatLook ?? { chatDim: 0, maskTop: 0, maskBottom: 0, frost: 0, widthCapRem: 0, widthInsetRem: 0, perfSmooth: 0, hideElapsedDecimal: 0, dragResize: 0, composerFade: 0, sessionHover: 0, sessionHoverSide: 1, sessionHoverMax: 10 }))};
+  // 会话概览悬停卡: the serve endpoint (token included) the hover card
+  // fetches its prompt list from; empty = the feature stays unmounted.
+  // A serve restart rotates the token while css/chat stay identical — the
+  // identity checks below would then early-return this eval and leave EARLIER
+  // generations' hover listeners bound. The slot below is refreshed by every
+  // eval (this line runs before any fast path), so those listeners keep
+  // reading the FRESHEST endpoint; PREV_API additionally feeds the final
+  // identity check so a token rotation re-runs the full apply (same
+  // semantics as a wallpaper URL rotation re-running the transition).
+  var PREVIEW_API = ${JSON.stringify(payload.previewApi ?? "")};
+  var PREV_API = window.__zcodeBeautify.previewApi;
+  window.__zcodeBeautify.previewApi = PREVIEW_API;
   var BUBBLE = ${JSON.stringify(JSON.stringify(payload.bubbleLook ?? { preset: "default", tint: 28, radius: 12, width: 70, align: "right" }))};
   var SPIN = ${JSON.stringify(JSON.stringify(payload.spinnerLook ?? { mode: "default", image: "", spin: true, size: 16 }))};
+  var LOAD = ${JSON.stringify(JSON.stringify(payload.chatLoadLook ?? { mode: "default", image: "", spin: true, size: 16 }))};
+  // 会话列表分页 (sidebar list paging): {initial, step, collapse} — initial 0
+  // = the stock 5/+5 paging with no collapse control.
+  var LIST = ${JSON.stringify(JSON.stringify(payload.listPaging ?? { initial: 0, step: 0, collapse: 0 }))};
+  // Generation stamp: the BUILD version of the paging engine. Older
+  // generations (their addScriptToEvaluateOnNewDocument registrations outlive
+  // the serve restart that shipped fixed code) leave identical css/chat/list
+  // keys — without the stamp the newer eval would early-return on the
+  // identity check and the OLD machinery (buggy scan, stale closures) would
+  // keep running. A plain eval-instance marker would be wrong: every
+  // Runtime.evaluate creates fresh closures, so same-build pushes would
+  // always full-apply and replay the wallpaper transition. Bump
+  // LIST_PAGING_VER whenever the paging code below changes.
+  var LIST_VER = ${JSON.stringify(LIST_PAGING_VER)};
   // Bubble recipe tables must be initialized HERE, before the fast paths run:
   // applyBubbleLook() is reachable from the volume fast path at the top of
   // this function body, and var initializers down below would still be
@@ -250,6 +284,22 @@ export function buildBootstrapScript(payload: InjectionPayload): string {
   // bootstrap silently).
   var BUB = '[data-v4-user-input-bubble]';
   var BUB_ROW = '[class~="group/user-row"]';
+  // 会话概览悬停卡 state — initialized HERE, above the fast paths, for the
+  // same reason as BUB/RECIPES below: applyChatLook (→ zbHoverApply, which
+  // binds listeners closing over these) is reachable from the volume/chat
+  // fast paths at the top of this body, and a generation that takes a fast
+  // path NEVER executes the var initializers further down — its listeners
+  // would then read undefined forever (live hit: toggling the panel switch
+  // rebound with zbHoverCache undefined; every hover threw and the card
+  // stayed empty).
+  var zbHoverTimer = 0;
+  var zbHoverCloseTimer = 0;
+  var zbHoverCur = '';
+  var zbHoverPend = '';
+  var zbHoverCache = {};
+  var zbHoverRowEl = null;
+  var zbHoverRectTop = 0;
+  var zbHoverRectLeft = 0;
   // --zb-bubble-tint holds 0-1; the mixes scale it back to a percentage.
   // Recipes + custom CSS are baked serve-side from core/bubbleRecipes.ts so
   // this table and the panel preview share one source of truth. The custom
@@ -264,7 +314,8 @@ export function buildBootstrapScript(payload: InjectionPayload): string {
   if (VIDEO_SRC && VOL !== (window.__zcodeBeautify.vol ?? 0)
       && window.__zcodeBeautify.cssText === ${JSON.stringify(payload.css)}
       && window.__zcodeBeautify.videoSrc === VIDEO_SRC
-      && window.__zcodeBeautify.kb === ${JSON.stringify(Boolean(payload.kenBurns))}) {
+      && window.__zcodeBeautify.kb === ${JSON.stringify(Boolean(payload.kenBurns))}
+      && window.__zcodeBeautify.listStamp === LIST_VER) {
     var liveVid = document.getElementById(MARKER + '-video');
     if (liveVid) {
       liveVid.muted = VOL === 0;
@@ -284,6 +335,15 @@ export function buildBootstrapScript(payload: InjectionPayload): string {
       window.__zcodeBeautify.spinnerKey = SPIN;
       applySpinnerLook();
     }
+    if (window.__zcodeBeautify.loadKey !== LOAD) {
+      window.__zcodeBeautify.loadKey = LOAD;
+      applyLoadLook();
+    }
+    if (window.__zcodeBeautify.listKey !== LIST) {
+      window.__zcodeBeautify.listKey = LIST;
+      window.__zcodeBeautify.listStamp = LIST_VER;
+      applyListPaging();
+    }
     return;
   }
 
@@ -299,6 +359,7 @@ export function buildBootstrapScript(payload: InjectionPayload): string {
       && window.__zcodeBeautify.vol === VOL
       && window.__zcodeBeautify.bubbleKey === BUBBLE
       && window.__zcodeBeautify.spinnerKey === SPIN
+      && window.__zcodeBeautify.loadKey === LOAD
       && document.getElementById(MARKER + '-style');
     window.__zcodeBeautify.chatKey = CHAT;
     applyChatLook();
@@ -316,6 +377,7 @@ export function buildBootstrapScript(payload: InjectionPayload): string {
       && window.__zcodeBeautify.vol === VOL
       && window.__zcodeBeautify.chatKey === CHAT
       && window.__zcodeBeautify.spinnerKey === SPIN
+      && window.__zcodeBeautify.loadKey === LOAD
       && document.getElementById(MARKER + '-style');
     window.__zcodeBeautify.bubbleKey = BUBBLE;
     applyBubbleLook();
@@ -334,10 +396,49 @@ export function buildBootstrapScript(payload: InjectionPayload): string {
       && window.__zcodeBeautify.vol === VOL
       && window.__zcodeBeautify.chatKey === CHAT
       && window.__zcodeBeautify.bubbleKey === BUBBLE
+      && window.__zcodeBeautify.loadKey === LOAD
       && document.getElementById(MARKER + '-style');
     window.__zcodeBeautify.spinnerKey = SPIN;
     applySpinnerLook();
     if (spinnerOnly) return;
+  }
+
+  // Chat-load fast path (会话底部加载图标): same shape as the spinner — its
+  // rules live in their own style element, swapping the icon must not replay
+  // the wallpaper transition.
+  if (window.__zcodeBeautify.loadKey !== LOAD) {
+    var loadOnly = window.__zcodeBeautify.cssText === ${JSON.stringify(payload.css)}
+      && window.__zcodeBeautify.videoSrc === VIDEO_SRC
+      && window.__zcodeBeautify.wpImg === WP_IMG
+      && window.__zcodeBeautify.kb === ${JSON.stringify(Boolean(payload.kenBurns))}
+      && window.__zcodeBeautify.vol === VOL
+      && window.__zcodeBeautify.chatKey === CHAT
+      && window.__zcodeBeautify.bubbleKey === BUBBLE
+      && window.__zcodeBeautify.spinnerKey === SPIN
+      && document.getElementById(MARKER + '-style');
+    window.__zcodeBeautify.loadKey = LOAD;
+    applyLoadLook();
+    if (loadOnly) return;
+  }
+
+  // List-paging fast path (会话列表分页): the paging state machine lives in
+  // its own observer + per-container attrs, so re-counting rows must not
+  // replay the wallpaper transition either.
+  if (window.__zcodeBeautify.listKey !== LIST) {
+    var listOnly = window.__zcodeBeautify.cssText === ${JSON.stringify(payload.css)}
+      && window.__zcodeBeautify.videoSrc === VIDEO_SRC
+      && window.__zcodeBeautify.wpImg === WP_IMG
+      && window.__zcodeBeautify.kb === ${JSON.stringify(Boolean(payload.kenBurns))}
+      && window.__zcodeBeautify.vol === VOL
+      && window.__zcodeBeautify.chatKey === CHAT
+      && window.__zcodeBeautify.bubbleKey === BUBBLE
+      && window.__zcodeBeautify.spinnerKey === SPIN
+      && window.__zcodeBeautify.loadKey === LOAD
+      && document.getElementById(MARKER + '-style');
+    window.__zcodeBeautify.listKey = LIST;
+    window.__zcodeBeautify.listStamp = LIST_VER;
+    applyListPaging();
+    if (listOnly) return;
   }
 
   // State alone is not proof the DOM work succeeded: an earlier run may have
@@ -346,7 +447,7 @@ export function buildBootstrapScript(payload: InjectionPayload): string {
   // no-op and the page would never heal. kb participates too: toggling Ken
   // Burns alone changes no CSS, and without it the toggle would early-return
   // before applyKb ever runs.
-  if (window.__zcodeBeautify.cssText === ${JSON.stringify(payload.css)} && window.__zcodeBeautify.videoSrc === VIDEO_SRC && window.__zcodeBeautify.wpImg === WP_IMG && window.__zcodeBeautify.kb === ${JSON.stringify(Boolean(payload.kenBurns))} && window.__zcodeBeautify.vol === VOL && window.__zcodeBeautify.chatKey === CHAT && window.__zcodeBeautify.bubbleKey === BUBBLE && window.__zcodeBeautify.spinnerKey === SPIN && document.getElementById(MARKER + '-style')) return;
+  if (window.__zcodeBeautify.cssText === ${JSON.stringify(payload.css)} && window.__zcodeBeautify.videoSrc === VIDEO_SRC && window.__zcodeBeautify.wpImg === WP_IMG && window.__zcodeBeautify.kb === ${JSON.stringify(Boolean(payload.kenBurns))} && window.__zcodeBeautify.vol === VOL && window.__zcodeBeautify.chatKey === CHAT && window.__zcodeBeautify.bubbleKey === BUBBLE && window.__zcodeBeautify.spinnerKey === SPIN && window.__zcodeBeautify.loadKey === LOAD && window.__zcodeBeautify.listKey === LIST && window.__zcodeBeautify.listStamp === LIST_VER && PREV_API === PREVIEW_API && document.getElementById(MARKER + '-style')) return;
   window.__zcodeBeautify.cssText = ${JSON.stringify(payload.css)};
   window.__zcodeBeautify.videoSrc = VIDEO_SRC;
   window.__zcodeBeautify.wpImg = WP_IMG;
@@ -622,6 +723,11 @@ export function buildBootstrapScript(payload: InjectionPayload): string {
   applyBubbleLook();
   window.__zcodeBeautify.spinnerKey = SPIN;
   applySpinnerLook();
+  window.__zcodeBeautify.loadKey = LOAD;
+  applyLoadLook();
+  window.__zcodeBeautify.listKey = LIST;
+  window.__zcodeBeautify.listStamp = LIST_VER;
+  applyListPaging();
 
   function applyChatLook() {
     if (typeof CHAT_UI !== 'undefined' && !CHAT_UI) return;
@@ -645,11 +751,34 @@ export function buildBootstrapScript(payload: InjectionPayload): string {
     var perfOn = Number(C.perfSmooth) === 1;
     var decOn = Number(C.hideElapsedDecimal) === 1;
     var dragOn = Number(C.dragResize) === 1;
+    // 会话概览悬停卡: needs the serve endpoint; without it the toggle is a
+    // no-op (nothing mounts, the native hover card stays).
+    var hoverOn = Number(C.sessionHover) === 1 && typeof PREVIEW_API === 'string' && PREVIEW_API.length > 0;
+    // 会话概览 two dials, published to SLOTS so every listener generation
+    // (including stale closures from older bootstrap registrations) reads the
+    // CURRENT config at event/fill time — same pattern as previewApi.
+    //   hoverSide: 0 = the LEFT task-list rows stop opening the card (the
+    //              sidebar keeps ZCode's own workspace hover card).
+    //   hoverMax:  visible-row cap; excess prompts live in the scroll area.
+    if (window.__zcodeBeautify) {
+      window.__zcodeBeautify.hoverSide = Number(C.sessionHoverSide) === 0 ? 0 : 1;
+      var hm = Math.round(Number(C.sessionHoverMax));
+      window.__zcodeBeautify.hoverMax = Number.isFinite(hm) && hm >= 1 ? Math.min(60, hm) : 10;
+    }
+    // 输入框透明度: T is the composer background's transparency in %. The
+    // token's OWN alpha is REPLACED by the slider's (rgb(from … r g b) strips
+    // it, then color-mix scales toward transparent) — ZCode 3.18 ships
+    // --color-input at .5 alpha natively and the wallpaper bridge keeps that,
+    // so "0 = native" read as still-half-transparent; the slider is now the
+    // single source of truth: 0 = solid, 100 = invisible, 50 ≈ the stock look.
+    var fade = Math.max(0, Math.min(100, Math.round(Number(C.composerFade) >= 0 && Number(C.composerFade) <= 100 ? Number(C.composerFade) : 50)));
     var st = document.getElementById(MARKER + '-chatlook-style');
     var fr = document.getElementById(MARKER + '-frost');
     var zm = document.getElementById(MARKER + '-zonemask');
+    // Feature teardown — but NOT of the style element itself: the composer
+    // fade rule is always-on (its 50 default reproduces the stock look), so
+    // the style stays mounted and the flow falls through to rewrite it.
     if (!masksOn && !widthOn && !perfOn && !decOn && !dragOn) {
-      if (st) st.remove();
       if (fr) fr.remove();
       if (zm) zm.remove();
       if (window.__zcodeBeautify.chatObs) {
@@ -661,15 +790,16 @@ export function buildBootstrapScript(payload: InjectionPayload): string {
         window.__zcodeBeautify.elapsedObs = null;
       }
       zbGripClean();
-      return;
     }
+    if (!hoverOn) zbHoverClean();
     if (!st) {
       st = document.createElement('style');
       st.id = MARKER + '-chatlook-style';
       (document.head || document.documentElement).appendChild(st);
     }
     st.textContent = ':root{--zb-chat-dim:' + (C.chatDim / 100) + ';--zb-mask-top:' + (C.maskTop / 100)
-      + ';--zb-mask-bot:' + (C.maskBottom / 100) + ';--zb-frost:' + (C.frost / 100) + '}'
+      + ';--zb-mask-bot:' + (C.maskBottom / 100) + ';--zb-frost:' + (C.frost / 100)
+      + ';--zb-composer-fade:' + fade + '}'
       + (masksOn
         ? '#' + MARKER + '-frost{position:fixed;inset:0;z-index:-2147483645;pointer-events:none;background:rgb(255 255 255 / var(--zb-frost))}'
           + '#' + MARKER + '-zonemask{position:fixed;inset:0;z-index:-2147483644;pointer-events:none;'
@@ -678,6 +808,17 @@ export function buildBootstrapScript(payload: InjectionPayload): string {
           // classes; .zb-chat-col is the version-proof fallback (markChatCol).
           + 'div[class*="scrollbar-gutter:stable"][class*="overflow-y-auto"],.zb-chat-col'
           + '{background-color:rgb(0 0 0 / var(--zb-chat-dim)) !important}'
+        : '')
+      + (fade >= 0
+        // 输入框透明度: [data-composer-layout] is the composer's painted box
+        // (bg-input → var(--color-input), 3.18). rgb(from … r g b / 1) takes
+        // the token's COLOR but FORCES alpha 1 — the omitted-alpha form would
+        // keep the token's own .5 (spec: alpha defaults to the origin's) and
+        // every level would read half-transparent. color-mix then applies
+        // exactly the slider's transparency. The focus ring / border are
+        // separate tokens and stay untouched. The var indirection gives the
+        // panel's slider an instant inline-var preview (same as the masks).
+        ? '[data-composer-layout]{background-color:color-mix(in srgb, rgb(from var(--color-input, rgba(128,128,128,.35)) r g b / 1) calc(100% - var(--zb-composer-fade, 50)*1%), transparent) !important}'
         : '')
       + (widthOn && !dragOn
         // Mirrors ZCode's own tiers against the "conversation" container so
@@ -880,6 +1021,469 @@ export function buildBootstrapScript(payload: InjectionPayload): string {
     } else {
       zbGripClean();
     }
+    // 会话概览悬停卡: idempotent mount/unmount riding the chat-look push.
+    zbHoverApply(hoverOn);
+  }
+
+  // --- 会话概览悬停卡 (session hover preview) ---------------------------------
+  // TWO anchors open the card after a 300ms hover:
+  //   · sidebar session rows  — [data-testid^="task-item-"] (both renderers)
+  //   · conversation turn ticks — [data-testid^="v4-turn-navigator-item-"],
+  //     the 对话概要标示 strip at the conversation's left edge; a tick shows
+  //     the OPEN conversation's list (resolved via the sidebar's selected row)
+  // Card look follows the user's reference image: a HEADLESS flat dark panel
+  // holding nothing but the session's real user prompts as left-aligned
+  // single-line rows (ZCode's list is on the LEFT, so the content faces the
+  // list: dash-led lines flush left, long ones ellipsized at the right end),
+  // the newest row bold + near-white.
+  // While mounted, ZCode's own hover cards for both surfaces are hidden
+  // ([data-testid="task-row-details"] workspace info + the per-turn
+  // v4-turn-navigator-tooltip preview); turning the feature off restores
+  // them. Prompt data comes from the serve daemon's /api/session-preview
+  // (ZCode's local session db). All timing is setTimeout-based: rAF throttles
+  // to zero in occluded renderers (measured — see the grip sync note) and
+  // would swallow the open delay entirely. Prompt text is user data — every
+  // node is built through textContent, never innerHTML.
+  function zbHoverRow(el) {
+    if (!el || el.nodeType !== 1 || !el.closest) return null;
+    var hit = el.closest('[data-testid^="task-item-"],[data-testid^="v4-turn-navigator-item-"]');
+    if (!hit) return null;
+    // sessionHoverSide=0 (设置: 侧栏标题不弹卡): the LEFT task-list rows are
+    // not anchors — only the conversation's turn ticks keep opening the card.
+    // Read the SLOT, not a closure var: older listener generations must see
+    // the current config too.
+    if ((hit.getAttribute('data-testid') || '').indexOf('task-item-') === 0
+        && window.__zcodeBeautify && window.__zcodeBeautify.hoverSide === 0) return null;
+    return hit;
+  }
+  function zbHoverSessionId(anchor) {
+    var tid = anchor && anchor.getAttribute('data-testid') || '';
+    if (tid.indexOf('task-item-') === 0) return tid.slice('task-item-'.length);
+    if (tid.indexOf('v4-turn-navigator-item-') === 0) {
+      // The tick belongs to the OPEN conversation; its testid carries a
+      // message row id, not a session id — resolve through the sidebar's
+      // selected row (bg-selected), falling back to the running one.
+      var run = document.querySelector('[data-testid^="task-item-"] .animate-spin');
+      var act = document.querySelector('[data-testid^="task-item-"].bg-selected')
+        || (run && run.closest ? run.closest('[data-testid^="task-item-"]') : null);
+      if (!act) return '';
+      var atid = act.getAttribute('data-testid') || '';
+      return atid.indexOf('task-item-') === 0 ? atid.slice('task-item-'.length) : '';
+    }
+    return '';
+  }
+  function zbHoverCardEl() {
+    return document.getElementById(MARKER + '-hover-card');
+  }
+  function zbHoverClose() {
+    clearTimeout(zbHoverCloseTimer);
+    var card = zbHoverCardEl();
+    if (card) card.remove();
+    zbHoverCur = '';
+    zbHoverPend = '';
+    zbHoverRowEl = null;
+  }
+  function zbHoverScheduleClose() {
+    clearTimeout(zbHoverTimer);
+    zbHoverPend = '';
+    clearTimeout(zbHoverCloseTimer);
+    // Grace window: crossing the gap row → card must not blink it away.
+    zbHoverCloseTimer = setTimeout(zbHoverClose, 180);
+  }
+  function zbHoverOver(e) {
+    var card = zbHoverCardEl();
+    if (card && card.contains(e.target)) { clearTimeout(zbHoverCloseTimer); return; }
+    var row = zbHoverRow(e.target);
+    if (!row) return;
+    var id = zbHoverSessionId(row);
+    if (!id) return;
+    clearTimeout(zbHoverCloseTimer);
+    if (zbHoverCur === id && card) return;
+    // mouseover also fires when crossing INTO nested children of the row —
+    // the pending delay tracks the session, not the element, so crossing
+    // children never restarts the 300ms timer from zero.
+    if (zbHoverPend === id) return;
+    clearTimeout(zbHoverTimer);
+    zbHoverPend = id;
+    zbHoverRowEl = row;
+    var hrc = row.getBoundingClientRect();
+    zbHoverRectTop = hrc.top; zbHoverRectLeft = hrc.left;
+    zbHoverTimer = setTimeout(function() { zbHoverPend = ''; zbHoverOpen(row, id); }, 300);
+  }
+  function zbHoverOut(e) {
+    var card = zbHoverCardEl();
+    if (card && card.contains(e.target)) {
+      // leaving the card: close unless the pointer moved onto the row/card gap
+      if (card.contains(e.relatedTarget)) return;
+      zbHoverScheduleClose();
+      return;
+    }
+    var row = zbHoverRow(e.target);
+    if (!row) return;
+    if (zbHoverRow(e.relatedTarget) === row) return; // still inside the row
+    if (card && card.contains(e.relatedTarget)) return; // onto the card
+    zbHoverScheduleClose();
+  }
+  function zbHoverData(id, cb) {
+    var hit = zbHoverCache[id];
+    if (hit && Date.now() - hit.at < 15000) return cb(hit.data);
+    // Read the SLOT, not the closure var: this listener may belong to an
+    // earlier bootstrap generation, and the slot always carries the newest
+    // endpoint/token (see the PREVIEW_API note at the top of the body).
+    var api = (window.__zcodeBeautify && window.__zcodeBeautify.previewApi) || PREVIEW_API;
+    if (!api) return cb(null);
+    var sep = api.indexOf('?') >= 0 ? '&' : '?';
+    fetch(api + sep + 'session=' + encodeURIComponent(id), { cache: 'no-store' })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(j) {
+        var data = j && j.ok === true ? j : null;
+        if (data) zbHoverCache[id] = { at: Date.now(), data: data };
+        cb(data);
+      })
+      .catch(function() { cb(null); });
+  }
+  function zbHoverText(t) {
+    return String(t == null ? '' : t).replace(/\\s+/g, ' ').trim();
+  }
+  function zbHoverFill(card, id, row) {
+    var list = card.querySelector('.' + MARKER + '-hov-list');
+    if (!list) return;
+    zbHoverData(id, function(data) {
+      if (zbHoverCur !== id) return; // switched rows / closed meanwhile
+      list.textContent = '';
+      // re-seat the sliding indicator (the wipe above detached it)
+      var ind2 = document.createElement('div');
+      ind2.id = MARKER + '-hover-ind';
+      list.appendChild(ind2);
+      if (!data) {
+        // serve down / token stale / db unreadable: still useful — the row's
+        // marquee carries the FULL untruncated title (tick anchors fall back
+        // to the selected sidebar row's marquee).
+        var fbSrc = (row.querySelector('[data-task-title-copy="original"]') || {}).textContent
+          || (document.querySelector('[data-testid^="task-item-"].bg-selected [data-task-title-copy="original"]') || {}).textContent
+          || '';
+        if (fbSrc) {
+          var fb = document.createElement('div');
+          fb.className = MARKER + '-hov-row';
+          fb.textContent = zbHoverText(fbSrc);
+          list.appendChild(fb);
+        }
+        var hint = document.createElement('div');
+        hint.className = MARKER + '-hov-hint';
+        hint.textContent = '会话概览服务不可用(美化服务未运行)' + (fbSrc ? ',仅显示完整标题' : '');
+        list.appendChild(hint);
+        return;
+      }
+      var ps = data.prompts || [];
+      if (!ps.length) {
+        var empty = document.createElement('div');
+        empty.className = MARKER + '-hov-hint';
+        empty.textContent = '(还没有用户提问)';
+        list.appendChild(empty);
+        return;
+      }
+      // 最多显示行数 (sessionHoverMax): the card lists EXACTLY the newest N
+      // prompts — a short, naturally-ending list (reference design), not a
+      // tall scroll area carrying the whole history. Older prompts are simply
+      // not listed; the CSS max-height below stays only as a viewport guard
+      // for very large N.
+      var cap = window.__zcodeBeautify ? Number(window.__zcodeBeautify.hoverMax) : NaN;
+      cap = Number.isFinite(cap) && cap >= 1 ? Math.min(60, Math.round(cap)) : 10;
+      if (ps.length > cap) ps = ps.slice(ps.length - cap);
+      for (var i = 0; i < ps.length; i++) {
+        var r = document.createElement('div');
+        r.className = MARKER + '-hov-row' + (i === ps.length - 1 ? ' ' + MARKER + '-hov-last' : '');
+        r.textContent = zbHoverText(ps[i].text);
+        if (ps[i].mid) r.setAttribute('data-mid', ps[i].mid);
+        list.appendChild(r);
+      }
+      // Newest sits at the bottom (image spec) — land the scroll there
+      // (only relevant when a very large N overflows the CSS max-height).
+      list.scrollTop = list.scrollHeight;
+    });
+  }
+  // Place the card beside the anchor rect: to its right, flipping left when
+  // the window runs out of room, clamped into the viewport. Shared by the
+  // open path and the scroll-follow reposition.
+  function zbHoverPlace(card, rc) {
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var cw = card.offsetWidth || 420, ch = card.offsetHeight || 200;
+    var left = rc.right + 8;
+    if (left + cw > vw - 8) left = Math.max(8, rc.left - cw - 8);
+    var top = rc.top - 6;
+    if (top + ch > vh - 8) top = Math.max(8, vh - 8 - ch);
+    card.style.left = Math.round(left) + 'px';
+    card.style.top = Math.round(top) + 'px';
+  }
+  function zbHoverOpen(row, id) {
+    var rc = row.getBoundingClientRect();
+    if (rc.width === 0 && rc.height === 0) return; // recycled/virtualized away
+    zbHoverClose();
+    // Anchor the moved-check at the CURRENT rect (the schedule-time snapshot
+    // may predate a tiny layout drift; only real movement should close).
+    zbHoverRowEl = row;
+    zbHoverRectTop = rc.top; zbHoverRectLeft = rc.left;
+    var card = document.createElement('div');
+    card.id = MARKER + '-hover-card';
+    card.setAttribute('role', 'tooltip');
+    // Reference design: a HEADLESS card — no title row, no meta line, just
+    // the right-aligned prompt list (the hovered row itself names the session).
+    var list = document.createElement('div');
+    list.className = MARKER + '-hov-list';
+    card.appendChild(list);
+    var loading = document.createElement('div');
+    loading.className = MARKER + '-hov-hint';
+    loading.textContent = '正在读取会话…';
+    list.appendChild(loading);
+    // Sliding hover indicator (see the CSS block): one bar under the row the
+    // pointer is on, top animating between rows as the pointer crosses them.
+    // It lives INSIDE the scrolling list (positions via row offsetTop) and is
+    // re-created by the fill passes (their textContent wipe detaches it);
+    // the listeners ride the list element itself, which survives the wipes.
+    var ind = document.createElement('div');
+    ind.id = MARKER + '-hover-ind';
+    list.appendChild(ind);
+    list.addEventListener('mouseover', function(e2) {
+      var rr = e2.target && e2.target.closest ? e2.target.closest('.' + MARKER + '-hov-row') : null;
+      var bar = document.getElementById(MARKER + '-hover-ind');
+      if (!bar) return;
+      if (!rr) { bar.style.opacity = '0'; return; }
+      bar.style.top = (rr.offsetTop + rr.offsetHeight - 2) + 'px';
+      bar.style.opacity = '1';
+    });
+    list.addEventListener('mouseleave', function() {
+      var bar = document.getElementById(MARKER + '-hover-ind');
+      if (bar) bar.style.opacity = '0';
+    });
+    // Click-to-jump (reference behavior): clicking a prompt row lands ON that
+    // prompt — not just on the session's tail — and the card STAYS OPEN (the
+    // user asked for it: keep reading / clicking other prompts after a jump;
+    // the card still closes via the normal paths — pointer leaves it, Esc,
+    // click elsewhere). ZCode's turn-navigator tick for a user message carries
+    // that message's id on data-turn-id, and the tick is itself a native
+    // button that scrolls the conversation to its turn; clicking the tick is
+    // the whole mechanism. For the OPEN conversation (tick anchor / selected
+    // row) that click is immediate; a DIFFERENT session opens first (sidebar
+    // row's native click → onSelectTask) and a short poll lands on the turn
+    // once its strip mounts. Delegated on the card so re-fills need no
+    // rebinding; hint rows carry no -hov-row and stay inert. Both ids are
+    // re-whitelisted before entering a selector.
+    card.addEventListener('click', function(e) {
+      var hit = e.target && e.target.closest ? e.target.closest('.' + MARKER + '-hov-row') : null;
+      if (!hit) return;
+      var mid = hit.getAttribute('data-mid') || '';
+      if (!/^[A-Za-z0-9_-]{6,96}$/.test(id)) return;
+      if (!/^msg_[A-Za-z0-9_-]{1,120}$/.test(mid)) mid = '';
+      var tickOf = function() {
+        return mid ? document.querySelector('[data-turn-id="' + mid + '"]') : null;
+      };
+      var sel = document.querySelector('[data-testid^="task-item-"].bg-selected');
+      if (sel && (sel.getAttribute('data-testid') || '') === 'task-item-' + id) {
+        var tk = tickOf();
+        if (tk) tk.click();
+        return;
+      }
+      var rowEl = document.querySelector('[data-testid="task-item-' + id + '"]');
+      if (rowEl) rowEl.click();
+      if (mid) {
+        // Landing self-heal: a freshly-opened session's virtualizer mounts
+        // with ESTIMATED row heights; the first tick click (scrollToIndex)
+        // can therefore land the viewport off the mounted window — a blank
+        // conversation (measured live: scrollHeight re-measured 2326→5942
+        // only BECAUSE of the jump). So: click only once content rows are
+        // mounted, then VERIFY rows are actually in the viewport; while not,
+        // re-click the tick — the second scrollToIndex runs against real
+        // measurements and lands correctly. Max 3 clicks, ~12s ceiling.
+        var landed = function() {
+          var ok = false;
+          var vh = window.innerHeight;
+          document.querySelectorAll('[data-row-id]').forEach(function(rr) {
+            var b = rr.getBoundingClientRect();
+            // small margins only — enough to tell "a row intersects the
+            // viewport" from "landed off the mounted window (±thousands px)"
+            if (b.top < vh - 24 && b.bottom > 24) ok = true;
+          });
+          return ok;
+        };
+        var tries = 0, clicked = 0;
+        var timer = setInterval(function() {
+          tries++;
+          var tk2 = tickOf();
+          var sc = document.querySelector('.zb-chat-col,div[class*="scrollbar-gutter:stable"]');
+          var mounted = sc && sc.querySelector('[data-row-id]');
+          if (!tk2 || !mounted) {
+            if (tries > 24) clearInterval(timer); // strip/content never came
+            return;
+          }
+          if (clicked > 0 && landed()) {
+            // Stay ARMED for ~10s after landing: ZCode's scroll-memory
+            // restore can fire very late (~8s live-measured on a big
+            // session) and clobber the jump with a stale saved position,
+            // re-blanking the viewport. Only leave the loop once the landing
+            // has held past that window. (clicked > 0 — the jump itself must
+            // happen even when the restore already left content visible.)
+            if (tries >= 20) clearInterval(timer);
+            return;
+          }
+          if (clicked >= 4 || tries > 24) { clearInterval(timer); return; }
+          tk2.click();
+          clicked++;
+        }, 500);
+      }
+    });
+    // Measure invisibly first (the CSS max-height caps it), then place.
+    card.style.visibility = 'hidden';
+    document.documentElement.appendChild(card);
+    zbHoverPlace(card, rc);
+    card.style.visibility = '';
+    zbHoverCur = id;
+    zbHoverFill(card, id, row);
+  }
+  function zbHoverOnKey(e) {
+    if (e.key === 'Escape') { clearTimeout(zbHoverTimer); zbHoverClose(); }
+  }
+  function zbHoverOnDown(e) {
+    var card = zbHoverCardEl();
+    if (card && card.contains(e.target)) return;
+    clearTimeout(zbHoverTimer);
+    zbHoverClose();
+  }
+  function zbHoverOnScroll(e) {
+    var card = zbHoverCardEl();
+    if (card && card.contains(e.target)) return; // scrolling the card's own list
+    if (!zbHoverRowEl) return; // nothing pending/open
+    // A jump keeps the card OPEN; if its anchor row got recycled by the
+    // post-open re-render (detached — rect all zeros), following it would
+    // fling the card to the viewport corner. A dead anchor closes instead.
+    if (!zbHoverRowEl.isConnected) { zbHoverClose(); return; }
+    // Streaming sessions fire scroll STORMS from scrollers that never
+    // actually move — measured live: the sidebar list's own overflow layer
+    // emitted 47 scroll events in 12s (scrollTop pinned at 0) while a
+    // session streamed, killing every hover attempt. Only a scroll that
+    // MOVES the anchor matters: while OPEN the card follows the anchor
+    // (native-popper behaviour — turn ticks scroll with streaming content);
+    // while still PENDING a moved anchor means the user is scrolling, so
+    // the open is cancelled.
+    var rc = zbHoverRowEl.getBoundingClientRect();
+    var moved = Math.abs(rc.top - zbHoverRectTop) >= 2 || Math.abs(rc.left - zbHoverRectLeft) >= 2;
+    if (!moved) return;
+    if (card) {
+      zbHoverPlace(card, rc);
+      zbHoverRectTop = rc.top; zbHoverRectLeft = rc.left;
+      return;
+    }
+    clearTimeout(zbHoverTimer);
+    zbHoverPend = '';
+    zbHoverRowEl = null;
+  }
+  function zbHoverUnbind() {
+    var s = window.__zcodeBeautify;
+    if (s && s.hoverListeners) {
+      document.removeEventListener('mouseover', s.hoverListeners[0], true);
+      document.removeEventListener('mouseout', s.hoverListeners[1], true);
+      document.removeEventListener('keydown', s.hoverListeners[2], true);
+      document.removeEventListener('pointerdown', s.hoverListeners[3], true);
+      document.removeEventListener('scroll', s.hoverListeners[4], true);
+      s.hoverListeners = null;
+    }
+  }
+  function zbHoverClean() {
+    zbHoverUnbind();
+    var s = window.__zcodeBeautify;
+    if (s) s.hoverTeardown = null;
+    var st = document.getElementById(MARKER + '-hover-style');
+    if (st) st.remove();
+    var card = zbHoverCardEl();
+    if (card) card.remove();
+    clearTimeout(zbHoverTimer);
+    clearTimeout(zbHoverCloseTimer);
+    zbHoverCur = '';
+    zbHoverCache = {};
+  }
+  function zbHoverApply(on) {
+    var s = window.__zcodeBeautify;
+    // Generation hand-off (same trap as the grip strips): every evaluation of
+    // this bootstrap — a fresh injection AND every replay of older
+    // addScriptToEvaluateOnNewDocument registrations after a reload — carries
+    // its own closure with its own PREVIEW_API. The LAST evaluation to run
+    // must own the hover bindings; an earlier closure left behind would keep
+    // answering hovers with a STALE token (401 forever after a serve
+    // restart). Evict any foreign binding, then (re)bind this closure's.
+    if (s.hoverTeardown && s.hoverTeardown !== zbHoverClean) {
+      try { s.hoverTeardown(); } catch (e) {}
+    }
+    if (!on) { zbHoverClean(); return; }
+    var st = document.getElementById(MARKER + '-hover-style');
+    if (!st) {
+      st = document.createElement('style');
+      st.id = MARKER + '-hover-style';
+      (document.head || document.documentElement).appendChild(st);
+    }
+    // Card paint per the user's reference: a flat, near-black, borderless
+    // panel with a big radius. It still RIDES ZCode's popover tokens (a Monet
+    // re-theme restyles it) but color-mix pulls them 16% toward near-black so
+    // the card stays dark and quiet even under a light theme.
+    // task-row-details is the SIDEBAR rows' own native workspace card — hide
+    // it only while OUR card answers sidebar hovers (sessionHoverSide=1);
+    // with the side anchor off, the sidebar keeps ZCode's stock hover card.
+    var sideOn = !(window.__zcodeBeautify && window.__zcodeBeautify.hoverSide === 0);
+    st.textContent = ''
+      + (sideOn ? '[data-testid="task-row-details"]{display:none!important}' : '')
+      + '[data-testid^="v4-turn-navigator-tooltip-"]{display:none!important}'
+      + '#' + MARKER + '-hover-card{position:fixed;z-index:60;width:420px;max-width:calc(100vw - 16px);'
+      + 'background:color-mix(in srgb,var(--color-menu,var(--color-popover,#1e1e27)) 84%,#06060a);'
+      + 'color:var(--color-popover-foreground,#e7e7ee);'
+      + 'border-radius:16px;box-shadow:0 14px 40px rgba(0,0,0,.5);'
+      + 'font-size:12.5px;line-height:1.55;padding:12px 0;pointer-events:auto;'
+      + 'animation:' + MARKER + '-hov-in .16s ease-out}'
+      + '@keyframes ' + MARKER + '-hov-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}'
+      + '.' + MARKER + '-hov-list{max-height:min(56vh,470px);overflow-y:auto;padding:2px 20px 4px;position:relative}'
+      + '.' + MARKER + '-hov-list::-webkit-scrollbar{width:8px}'
+      + '.' + MARKER + '-hov-list::-webkit-scrollbar-thumb{background:rgba(127,127,127,.3);border-radius:4px;'
+      + 'border:2px solid transparent;background-clip:content-box}'
+      // Rows face the LIST side, mirroring the reference app (its list sits
+      // on the RIGHT, so its rows hug the card's right edge). ZCode's list is
+      // on the LEFT: rows hug the left — text flush left with the small gray
+      // dash leading the line, overflowing ones cutting with an ellipsis at
+      // the right end.
+      + '.' + MARKER + '-hov-row{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;'
+      + 'padding:4px 2px 4px 18px;position:relative;color:var(--color-foreground-subtle,#a4a4b0);'
+      + 'cursor:pointer;transition:color .12s ease-out}'
+      // Hover motion per the reference: no background slab — the row's text
+      // brightens AND a short underline indicator slides under it (see the
+      // -hover-ind rule below), while the session's CURRENT row keeps a
+      // LONGER permanent underline (the reference's hovered bar is shorter
+      // than the current one's).
+      + '.' + MARKER + '-hov-row:hover{color:var(--color-foreground,#f4f4f8)}'
+      + '.' + MARKER + '-hov-row::before{content:"–";position:absolute;left:0;top:4px;color:rgba(127,127,142,.55)}'
+      + '.' + MARKER + '-hov-last{font-weight:700;color:var(--color-foreground,#f7f7fb)}'
+      + '.' + MARKER + '-hov-last::before{color:rgba(200,200,214,.7)}'
+      // the CURRENT row's long indicator — full content width
+      + '.' + MARKER + '-hov-last::after{content:"";position:absolute;left:18px;right:2px;bottom:2px;'
+      + 'height:1.5px;background:rgba(200,200,214,.4);border-radius:1px}'
+      // the sliding HOVER indicator — shorter than the current row's bar,
+      // transitions its top as the pointer crosses rows (the "motion")
+      + '#' + MARKER + '-hover-ind{position:absolute;left:20px;width:78%;height:1.5px;'
+      + 'background:var(--color-foreground,#e9e9f0);border-radius:1px;opacity:0;pointer-events:none;'
+      + 'transition:top .14s ease-out,width .14s ease-out,opacity .12s ease-out}'
+      + '.' + MARKER + '-hov-hint{padding:5px 2px 3px 18px;text-align:left;font-size:11.5px;'
+      + 'color:var(--color-foreground-subtle,#8a8a96)}';
+    // NOTE: deliberately NO prefers-reduced-motion opt-out here. Measured on
+    // the user's machine: the OS ships animations OFF (the media query
+    // matches), and honoring it silently swallowed every motion this card
+    // ships — the user asked for these effects explicitly. They are tiny
+    // (≤160ms fades/slides on a hover overlay), so they stay unconditional.
+    if (s.hoverTeardown === zbHoverClean) return; // this closure already owns the page
+    // CAPTURE phase throughout: ZCode's React root sits between the sidebar
+    // and document and can stopPropagation on bubbled mouseover/mouseout —
+    // capture runs top-down and cannot be cut off by anything below document.
+    document.addEventListener('mouseover', zbHoverOver, true);
+    document.addEventListener('mouseout', zbHoverOut, true);
+    document.addEventListener('keydown', zbHoverOnKey, true);
+    document.addEventListener('pointerdown', zbHoverOnDown, true);
+    document.addEventListener('scroll', zbHoverOnScroll, true);
+    s.hoverTeardown = zbHoverClean;
+    s.hoverListeners = [zbHoverOver, zbHoverOut, zbHoverOnKey, zbHoverOnDown, zbHoverOnScroll];
   }
   // The duration span is a direct child of the loading row (verified in
   // ZCode's bundle: aria-hidden + font-mono next to the zcode-loading-label).
@@ -918,18 +1522,36 @@ export function buildBootstrapScript(payload: InjectionPayload): string {
   function perfApply() {
     var rows = document.querySelectorAll('.history-message, [class~="group/assistant-turn"]');
     if (!rows.length) return;
+    // v2 lifecycle (rebuilt after the 6.2.0 "unrendered stretches" bug):
+    // the old engine only ever ADDED marks — baked contain-intrinsic-size
+    // went stale on rows that keep growing while skipped, and the (3.18 v4)
+    // virtualizer reads those placeholders as real heights — the total
+    // height oscillated 8x in one scroll (86762↔10346 px measured). Now:
+    //   · NO new marks while a turn is streaming (chat-loading present) and
+    //     the LAST row is never marked (it is where the next turn grows);
+    //   · rows returning near the viewport are unmarked, so the measurer
+    //     always sees live layout where it looks;
+    //   · marks only bake heights of STATIC rows (finished content), so the
+    //     placeholder the virtualizer reads stays the truth.
+    var streaming = !!document.querySelector('[data-testid="chat-loading"]');
     var vh = window.innerHeight || 800;
     // First read flushes any pending layout once; the rest read cached values.
     for (var i = 0; i < rows.length; i++) {
       var el = rows[i];
+      if (el.querySelector('[data-testid="chat-loading"]')) continue;
       var r = el.getBoundingClientRect();
       // Well outside the viewport (a full viewport of slack both ways).
       if (r.bottom < -vh || r.top > 2 * vh) {
-        if (el.getAttribute('data-zb-cv') !== '1') {
+        if (!streaming && i < rows.length - 1 && el.getAttribute('data-zb-cv') !== '1') {
           el.setAttribute('data-zb-cv', '1');
           el.style.containIntrinsicSize = Math.round(r.width) + 'px ' + Math.round(r.height) + 'px';
           el.style.contentVisibility = 'auto';
         }
+      } else if (el.getAttribute('data-zb-cv') === '1') {
+        // back near the viewport: drop the marker + placeholder
+        el.style.contentVisibility = '';
+        el.style.containIntrinsicSize = '';
+        el.removeAttribute('data-zb-cv');
       }
     }
   }
@@ -1350,6 +1972,366 @@ export function buildBootstrapScript(payload: InjectionPayload): string {
     st.textContent = css;
   }
 
+  // 会话底部加载图标: ZCode 3.18 renders the conversation footer's status row
+  // as [data-testid="chat-loading"] with the glyph inside
+  // [data-chat-loading-icon="true"] (a brand-colored orbit svg). CSS-only
+  // swap — React re-renders this row constantly while streaming, so DOM
+  // surgery would fight the reconciler.
+  //   classic: repaint the PRE-3.18 pixel wave — nine dots in a 3×3 grid
+  //     (13px, 1.3px gaps), the ring pulsing clockwise (950ms cycle,
+  //     110ms per-dot stagger, order 0,1,2,5,8,7,6,3), center dot static.
+  //     Implemented as nine radial-gradient tiles; each dot's alpha rides a
+  //     @property-registered number so the wave animates without extra DOM.
+  //   image: paint the user picture over the glyph; optional CSS rotation.
+  function applyLoadLook() {
+    if (typeof CHAT_UI !== 'undefined' && !CHAT_UI) return;
+    var L;
+    try { L = JSON.parse(LOAD); } catch (e) { return; }
+    var st = document.getElementById(MARKER + '-load-style');
+    var mode = L && (L.mode === 'classic' || L.mode === 'image') ? L.mode : 'default';
+    if (mode === 'image' && !L.image) mode = 'default';
+    if (mode === 'default') {
+      if (st) st.remove();
+      var stale = document.querySelectorAll('.' + MARKER + '-ld-grid');
+      for (var si = 0; si < stale.length; si++) stale[si].remove();
+      if (window.__zcodeBeautify.loadObs) {
+        try { window.__zcodeBeautify.loadObs.disconnect(); } catch (e) {}
+        window.__zcodeBeautify.loadObs = null;
+      }
+      return;
+    }
+    if (!st) {
+      st = document.createElement('style');
+      st.id = MARKER + '-load-style';
+      (document.head || document.documentElement).appendChild(st);
+    }
+    var ICON = '[data-chat-loading-icon="true"]';
+    var size = Math.max(10, Math.min(28, Math.round(L.size || 16)));
+    var css = '';
+    // Sweep any injected pixel grids from a previous classic run first —
+    // the default/image styles below must not coexist with them.
+    var grids = document.querySelectorAll('.' + MARKER + '-ld-grid');
+    for (var gi = 0; gi < grids.length; gi++) grids[gi].remove();
+    if (mode === 'classic') {
+      // Faithful port of upstream's pre-3.18 ChatLoadingPixels (zai-org/ZCode,
+      // sync a60ba6a7): a 13px 3×3 grid of nine rounded dots, ring order
+      // [0,1,2,5,8,7,6,3] each pulsing with a 110ms-per-step stagger (950ms
+      // cycle, ease-in-out, peak at 35% with a 1.08 scale pop, dark themes
+      // peak at full opacity), center dot static at .07. The 6.1.1 attempt
+      // faked this with @property-driven gradient layers — dots rendered dim
+      // and mushy; the real one is nine ELEMENTS animating opacity+transform,
+      // so that is what we mount (a MutationObserver re-mounts after React
+      // rebuilds the row).
+      var isDark = /(^|\\s)(dark|theme-zai-dark)(\\s|$)/.test(document.documentElement.className || '');
+      css += '.' + MARKER + '-ld-grid{display:grid!important;grid-template-columns:repeat(3,1fr)!important;'
+        + 'grid-template-rows:repeat(3,1fr)!important;gap:1.3px!important;width:13px!important;height:13px!important;'
+        + 'flex:none!important;color:var(--color-foreground,rgba(200,200,205,.9))!important}'
+      // NO !important on the dot rules: an author !important BEATS CSS
+      // animations in the cascade (and an !important animation shorthand
+      // resets animation-delay, killing the ring stagger) — the 6.1.3 dots
+      // rendered as a static dim grid because opacity:.15!important froze
+      // the keyframes out. Namespaced selectors need no boosting anyway.
+        + '.' + MARKER + '-ld-dot{width:100%;height:100%;border-radius:1px;'
+        + 'background:currentColor;opacity:.15;'
+        + 'animation:' + MARKER + '-ld-on 950ms ease-in-out infinite}'
+        + '.' + MARKER + '-ld-dot.zb-ld-center{opacity:.07;animation:none}'
+        + '@keyframes ' + MARKER + '-ld-on{0%,100%{opacity:.15;transform:scale(1)}'
+        + '35%{opacity:' + (isDark ? '1' : '.75') + ';transform:scale(1.08)}}'
+        // Ring delays: child index → ORBIT position × 110ms (center = child 5).
+        + '.' + MARKER + '-ld-dot:nth-child(2){animation-delay:110ms}'
+        + '.' + MARKER + '-ld-dot:nth-child(3){animation-delay:220ms}'
+        + '.' + MARKER + '-ld-dot:nth-child(4){animation-delay:770ms}'
+        + '.' + MARKER + '-ld-dot:nth-child(6){animation-delay:330ms}'
+        + '.' + MARKER + '-ld-dot:nth-child(7){animation-delay:660ms}'
+        + '.' + MARKER + '-ld-dot:nth-child(8){animation-delay:550ms}'
+        + '.' + MARKER + '-ld-dot:nth-child(9){animation-delay:440ms}'
+        // Hide the stock 3.18 glyph; our grid is a flex child of its slot.
+        + ICON + '>*:not(.' + MARKER + '-ld-grid){display:none!important}';
+      zbLdMount();
+      if (!window.__zcodeBeautify.loadObs) {
+        var ldPend = false;
+        var ldObs = new MutationObserver(function() {
+          if (ldPend) return;
+          ldPend = true;
+          requestAnimationFrame(function() { ldPend = false; zbLdMount(); });
+        });
+        ldObs.observe(document.documentElement, { childList: true, subtree: true });
+        window.__zcodeBeautify.loadObs = ldObs;
+      }
+    } else {
+      if (window.__zcodeBeautify.loadObs) {
+        try { window.__zcodeBeautify.loadObs.disconnect(); } catch (e) {}
+        window.__zcodeBeautify.loadObs = null;
+      }
+      css += ICON + '>*{display:none!important}'
+        + ICON + '{width:' + size + 'px!important;height:' + size + 'px!important;'
+        + 'background:url("' + L.image + '") center/contain no-repeat!important}';
+      if (L.spin) {
+        css += ICON + '{animation:zb-ld-rot 1s linear infinite!important}'
+          + '@keyframes zb-ld-rot{to{transform:rotate(360deg)}}';
+      }
+    }
+    st.textContent = css;
+  }
+
+  // Mounts the classic pixel grid into every live chat-loading icon slot that
+  // does not carry one yet. Idempotent; called on every applyLoadLook pass and
+  // from the rAF-coalesced MutationObserver (React recreates the row per turn).
+  function zbLdMount() {
+    var icons = document.querySelectorAll('[data-chat-loading-icon="true"]');
+    for (var ii = 0; ii < icons.length; ii++) {
+      var host = icons[ii];
+      if (host.querySelector('.' + MARKER + '-ld-grid')) continue;
+      var g = document.createElement('span');
+      g.className = MARKER + '-ld-grid';
+      g.setAttribute('aria-hidden', 'true');
+      for (var k = 0; k < 9; k++) {
+        var d = document.createElement('i');
+        d.className = MARKER + '-ld-dot' + (k === 4 ? ' zb-ld-center' : '');
+        g.appendChild(d);
+      }
+      host.appendChild(g);
+    }
+  }
+
+  // --- 会话列表分页 (sidebar list paging) ------------------------------------
+  // ZCode's ProjectTaskRows hardcodes the project card's session list to
+  // "first 5 rows, +5 per 显示更多 click" with no way back. This re-implements
+  // the paging on top of React's own list instead of patching it: rows beyond
+  // the wanted count get an inline display:none, extra rows are render-ahead
+  // by CLICKING the native 显示更多 button (the limit lives in React state —
+  // clicking is the only sanctioned way to move it), and an optional 收起
+  // control snaps the visible window back to the initial count. The whole
+  // machine is idempotent and re-runs from a childList-only MutationObserver,
+  // so React rebuilds (mount, limit growth, row swaps) re-converge on their
+  // own. Scope: containers under [data-testid="virtual-project-tasks"] only —
+  // the pinned / timeline / unread sections keep their stock behaviour.
+  function zbListRows(container) {
+    var out = [];
+    var kids = container.children;
+    for (var i = 0; i < kids.length; i++) {
+      var k = kids[i];
+      // Row wrappers are plain divs; our toolbar div carries the marker attr
+      // and the empty state ("还没有会话") is never a paged row.
+      if (k.tagName === 'DIV' && !k.hasAttribute('data-zb-list-bar') && k.getAttribute('data-testid') !== 'project-no-tasks') out.push(k);
+    }
+    return out;
+  }
+
+  function zbListClean() {
+    if (window.__zcodeBeautify.listObs) {
+      try { window.__zcodeBeautify.listObs.disconnect(); } catch (e) {}
+      window.__zcodeBeautify.listObs = null;
+    }
+    var st = document.getElementById(MARKER + '-list-style');
+    if (st) st.remove();
+    var hosts = document.querySelectorAll('[data-testid="virtual-project-tasks"]');
+    for (var i = 0; i < hosts.length; i++) {
+      var bars = hosts[i].querySelectorAll('[data-zb-list-bar]');
+      for (var b = 0; b < bars.length; b++) bars[b].remove();
+      var lists = hosts[i].querySelectorAll('[data-zb-paging]');
+      for (var l = 0; l < lists.length; l++) {
+        lists[l].removeAttribute('data-zb-paging');
+        var rows = lists[l].children;
+        for (var r = 0; r < rows.length; r++) {
+          if (rows[r].style && rows[r].style.display === 'none') rows[r].style.display = '';
+        }
+      }
+    }
+  }
+
+  function applyListPaging() {
+    if (typeof CHAT_UI !== 'undefined' && !CHAT_UI) return;
+    var L;
+    try { L = JSON.parse(LIST); } catch (e) { return; }
+    var init = Math.max(0, Math.round(Number(L && L.initial) || 0));
+    if (init <= 0) { zbListClean(); return; }
+    // Publish to SLOTS, never to closures: the observer created by an earlier
+    // generation keeps firing this generation's scans (same pattern as
+    // hoverSide/hoverMax) — closures here would go stale on config edits.
+    window.__zcodeBeautify.listInit = init;
+    window.__zcodeBeautify.listStep = Math.max(1, Math.round(Number(L && L.step) || 5));
+    window.__zcodeBeautify.listCollapse = Number(L && L.collapse) === 1;
+
+    // Static rule: the native button is replaced by our toolbar row. Its
+    // element STAYS in the DOM (display:none) — render-ahead clicks it.
+    var stEl = document.getElementById(MARKER + '-list-style');
+    if (!stEl) {
+      stEl = document.createElement('style');
+      stEl.id = MARKER + '-list-style';
+      (document.head || document.documentElement).appendChild(stEl);
+    }
+    var listCss = '[data-zb-paging] > button[data-task-list-show-more]{display:none!important}';
+    if (stEl.textContent !== listCss) stEl.textContent = listCss;
+
+    // A container is the DEEPEST element whose relevant children are session
+    // rows: either it owns the native paging button directly, or every div
+    // child is a py-px row wrapper (toolbar/empty-state excluded). A fixed
+    // DEPTH would break — CollapsibleContent grows an extra animation wrapper
+    // after a collapse/expand cycle, moving the list one layer down (live:
+    // depth-3 candidates became the pl-2 wrapper, whose container child got
+    // paged as if it were a row). The "every div child is py-px" constraint
+    // also keeps the pl-2 wrapper itself out: it owns the worktree-creating
+    // py-px rows PLUS the non-py-px container div, so it never qualifies.
+    function qualifies(c) {
+      if (c.querySelector(':scope > button[data-task-list-show-more]')) return true;
+      var kids = c.children;
+      var saw = false;
+      for (var k = 0; k < kids.length; k++) {
+        var el = kids[k];
+        if (el.hasAttribute('data-zb-list-bar')) continue;
+        if (el.tagName !== 'DIV') return false;
+        if (el.getAttribute('data-testid') === 'project-no-tasks') continue;
+        if (String(el.className || '').indexOf('py-px') === -1) return false;
+        saw = true;
+      }
+      return saw;
+    }
+
+    function zbListToolbar(container, state) {
+      var native = container.querySelector(':scope > button[data-task-list-show-more]');
+      var rows = zbListRows(container);
+      // 显示更多 stays available whenever React still offers a page OR rows
+      // are hidden locally: once render-ahead lifted the React limit past the
+      // total the native button unmounts for good — without the second
+      // condition a 收起 would leave the hidden rows unreachable.
+      var needMore = Boolean(native) || rows.length > state.visible;
+      var needCollapse = window.__zcodeBeautify.listCollapse && state.visible > window.__zcodeBeautify.listInit;
+      var bar = container.querySelector(':scope > div[data-zb-list-bar]');
+      if (!needMore && !needCollapse) {
+        if (bar) bar.remove();
+        return;
+      }
+      if (!bar) {
+        bar = document.createElement('div');
+        bar.setAttribute('data-zb-list-bar', '1');
+        bar.style.display = 'flex';
+        bar.style.alignItems = 'center';
+        bar.style.gap = '12px';
+        // Clone the native ghost button so the look tracks ZCode's own styles
+        // (classes ship whatever theme tokens the row buttons use).
+        var tpl = native ? native.cloneNode(true) : null;
+        if (tpl) tpl.removeAttribute('data-task-list-show-more');
+        var zh = (document.documentElement.lang || '').indexOf('zh') === 0;
+        var more = tpl || document.createElement('button');
+        more.type = 'button';
+        more.textContent = native && native.textContent ? native.textContent : (zh ? '显示更多' : 'Show more');
+        more.setAttribute('data-zb-list-more', '1');
+        more.addEventListener('click', function() {
+          state.visible += window.__zcodeBeautify.listStep;
+          applyListContainer(container);
+        });
+        var less = (tpl ? tpl.cloneNode(true) : document.createElement('button'));
+        less.type = 'button';
+        less.textContent = (zh ? '收起' : 'Show less');
+        less.setAttribute('data-zb-list-less', '1');
+        less.addEventListener('click', function() {
+          state.visible = window.__zcodeBeautify.listInit;
+          applyListContainer(container);
+        });
+        bar.appendChild(more);
+        bar.appendChild(less);
+      } else {
+        // Refresh the cloned label from the live native button (locale swaps).
+        var moreBtn = bar.querySelector('[data-zb-list-more]');
+        if (moreBtn && native && native.textContent && moreBtn.textContent !== native.textContent) {
+          moreBtn.textContent = native.textContent;
+        }
+      }
+      var moreB = bar.querySelector('[data-zb-list-more]');
+      if (moreB) moreB.style.display = needMore ? '' : 'none';
+      var lessB = bar.querySelector('[data-zb-list-less]');
+      if (lessB) lessB.style.display = needCollapse ? '' : 'none';
+      // Keep the toolbar the LAST child (React appends new rows at the end).
+      if (container.lastElementChild !== bar) container.appendChild(bar);
+    }
+
+    function applyListContainer(container) {
+      var SLOTS = window.__zcodeBeautify;
+      var state = container.__zbListVis;
+      if (!state) state = container.__zbListVis = { visible: SLOTS.listInit, baseInit: SLOTS.listInit };
+      // A config edit re-baselines: the new initial is the collapsed position
+      // every list should show (an expanded position from the old setting
+      // would otherwise linger until the page reloads).
+      if (state.baseInit !== SLOTS.listInit) {
+        state.baseInit = SLOTS.listInit;
+        state.visible = SLOTS.listInit;
+      }
+      var rows = zbListRows(container);
+      if (!rows.length) return;
+      // Render-ahead: while fewer rows are mounted than wanted, click the
+      // (hidden) native button — React raises its own limit by pageSize each
+      // time. Discrete clicks flush synchronously; the cap only bounds a
+      // pathological no-op loop, the observer self-heals any deferral.
+      var guard = 0;
+      var native = container.querySelector(':scope > button[data-task-list-show-more]');
+      while (rows.length < state.visible && native && guard < 100) {
+        native.click();
+        guard++;
+        rows = zbListRows(container);
+        native = container.querySelector(':scope > button[data-task-list-show-more]');
+      }
+      for (var r = 0; r < rows.length; r++) {
+        var want = r < state.visible ? '' : 'none';
+        if (rows[r].style.display !== want) rows[r].style.display = want;
+      }
+      if (container.getAttribute('data-zb-paging') !== 'on') container.setAttribute('data-zb-paging', 'on');
+      zbListToolbar(container, state);
+    }
+
+    function scan() {
+      var cands = document.querySelectorAll('[data-testid="virtual-project-tasks"] div');
+      for (var i = 0; i < cands.length; i++) {
+        var c = cands[i];
+        if (qualifies(c)) {
+          applyListContainer(c);
+        } else if (c.getAttribute('data-zb-paging') === 'on') {
+          // Stale marking (structure changed, or a pre-fix generation paged
+          // the wrong element): undo the takeover so nothing stays hidden.
+          c.removeAttribute('data-zb-paging');
+          var kids = c.children;
+          for (var k = 0; k < kids.length; k++) {
+            if (kids[k].style && kids[k].style.display === 'none') kids[k].style.display = '';
+          }
+          delete c.__zbListVis;
+        }
+      }
+    }
+
+    scan();
+    // Generation handoff: an observer bound by an OLDER eval keeps firing that
+    // generation's scan closure (its addScriptToEvaluateOnNewDocument entry
+    // outlives serve restarts). Evict it so the live observer always belongs
+    // to the newest generation's code (same model as the hover-card rebinding).
+    if (!window.__zcodeBeautify.listObs || window.__zcodeBeautify.listObsStamp !== LIST_VER) {
+      if (window.__zcodeBeautify.listObs) {
+        try { window.__zcodeBeautify.listObs.disconnect(); } catch (e) {}
+        window.__zcodeBeautify.listObs = null;
+      }
+      var listPend = false;
+      var listKick = function() {
+        if (listPend) return;
+        listPend = true;
+        requestAnimationFrame(function() { listPend = false; scan(); });
+      };
+      var obs = new MutationObserver(function(muts) {
+        // Cheap pre-filter: only mutations touching a paging host matter —
+        // chat-area ticks (100ms elapsed text updates) must not force a
+        // sidebar rescan every frame.
+        for (var m = 0; m < muts.length; m++) {
+          var added = muts[m].addedNodes;
+          for (var n = 0; n < added.length; n++) {
+            var el = added[n];
+            if (el && el.closest && el.closest('[data-testid="virtual-project-tasks"]')) { listKick(); return; }
+          }
+        }
+      });
+      obs.observe(document.documentElement, { childList: true, subtree: true });
+      window.__zcodeBeautify.listObs = obs;
+      window.__zcodeBeautify.listObsStamp = LIST_VER;
+    }
+  }
+
   // Keep the loop alive. Chromium's media suspension can freeze a nominally
   // playing wallpaper video (paused:false but the clock stops — occlusion
   // misdetection is common with transparent Electron windows), so a watchdog
@@ -1432,6 +2414,15 @@ export function buildBootstrapScript(payload: InjectionPayload): string {
 }
 
 /** Removes everything the bootstrap script created. */
+/**
+ * Build version of the 会话列表分页 engine inside the bootstrap. The final
+ * identity check compares it against window.__zcodeBeautify.listStamp so a
+ * serve restart shipping FIXED paging code re-runs applyListPaging even when
+ * css/chat/list keys are unchanged (older generations' registrations re-run
+ * first and would otherwise mask the fix). Bump on any paging-code change.
+ */
+export const LIST_PAGING_VER = 2;
+
 export function buildResetScript(marker = "zcode-beautify"): string {
   return `(function(){
   document.getElementById(${JSON.stringify(marker)} + '-style')?.remove();
@@ -1441,6 +2432,15 @@ export function buildResetScript(marker = "zcode-beautify"): string {
   document.getElementById(${JSON.stringify(marker)} + '-chatlook-style')?.remove();
   document.getElementById(${JSON.stringify(marker)} + '-bubble-style')?.remove();
   document.getElementById(${JSON.stringify(marker)} + '-spinner-style')?.remove();
+  document.getElementById(${JSON.stringify(marker)} + '-load-style')?.remove();
+  document.getElementById(${JSON.stringify(marker)} + '-list-style')?.remove();
+  document.querySelectorAll('.' + ${JSON.stringify(marker)} + '-ld-grid').forEach(function(n){n.remove()});
+  // 会话列表分页 teardown: toolbars, container attrs and the inline row hides.
+  document.querySelectorAll('[data-zb-list-bar]').forEach(function(n){n.remove()});
+  document.querySelectorAll('[data-zb-paging]').forEach(function(n){
+    n.removeAttribute('data-zb-paging');
+    n.querySelectorAll(':scope > div').forEach(function(r){ if (r.style.display === 'none') r.style.display = ''; });
+  });
   document.getElementById(${JSON.stringify(marker)} + '-frost')?.remove();
   document.getElementById(${JSON.stringify(marker)} + '-zonemask')?.remove();
   // The bootstrap persists the CSS/wallpaper for the panel's offline self-heal;
@@ -1453,6 +2453,9 @@ export function buildResetScript(marker = "zcode-beautify"): string {
     window.__zcodeBeautify.chatKey = null;
     window.__zcodeBeautify.bubbleKey = null;
     window.__zcodeBeautify.spinnerKey = null;
+    window.__zcodeBeautify.loadKey = null;
+    window.__zcodeBeautify.listKey = null;
+    window.__zcodeBeautify.listStamp = null;
     if (window.__zcodeBeautify.chatObs) {
       try { window.__zcodeBeautify.chatObs.disconnect(); } catch (e) {}
       window.__zcodeBeautify.chatObs = null;
@@ -1460,6 +2463,14 @@ export function buildResetScript(marker = "zcode-beautify"): string {
     if (window.__zcodeBeautify.elapsedObs) {
       try { window.__zcodeBeautify.elapsedObs.disconnect(); } catch (e) {}
       window.__zcodeBeautify.elapsedObs = null;
+    }
+    if (window.__zcodeBeautify.loadObs) {
+      try { window.__zcodeBeautify.loadObs.disconnect(); } catch (e) {}
+      window.__zcodeBeautify.loadObs = null;
+    }
+    if (window.__zcodeBeautify.listObs) {
+      try { window.__zcodeBeautify.listObs.disconnect(); } catch (e) {}
+      window.__zcodeBeautify.listObs = null;
     }
   }
 })();`;

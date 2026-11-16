@@ -5,6 +5,7 @@
 
 import { CdpConnection, injectIntoTarget, isUpdaterTarget, listTargets, pickRendererTargets, buildBootstrapScript, buildResetScript } from "./cdp.js";
 import { sanitizeCustomBubbleCss } from "./bubbleRecipes.js";
+import { normalizeComponentLook, workbuddyComponentCss, type ComponentLookConfig } from "./componentLook.js";
 import { loadWallpaper, type WallpaperAssets } from "./monet.js";
 import { buildVariableOverrides, buildTransparencyOverrides } from "./tokens.js";
 import { target } from "./target.js";
@@ -122,6 +123,77 @@ export interface ChatLookConfig {
    * exactly, so enabling the toggle changes nothing visually.
    */
   dragResize: number;
+  /**
+   * 输入框透明度 (composer transparency), 0-100: the composer background's
+   * transparency — 0 = solid, 100 = invisible, 50 ≈ the stock look (ZCode
+   * 3.18 ships --color-input at .5 alpha; the rule REPLACES the token's own
+   * alpha with the slider's). Absent/invalid fields default to 50, so
+   * pre-6.1.1 configs keep the stock appearance.
+   */
+  composerFade: number;
+  /**
+   * 会话概览悬停卡 (session hover preview): 0 = off, 1 = hovering a sidebar
+   * session row opens a preview card listing that conversation's real user
+   * prompts (served from ZCode's local session db via the serve daemon's
+   * /api/session-preview; a DOM-title fallback shows when serve is down).
+   * While on, ZCode's own workspace hover card (task-row-details) is hidden
+   * so the two never stack.
+   */
+  sessionHover: number;
+  /**
+   * 会话概览悬停卡 — 侧栏行锚点开关: 1 (default) = hovering a LEFT task-list
+   * session row also opens the card; 0 = only the conversation's turn ticks
+   * (对话概要标示) trigger it — the sidebar keeps ZCode's own workspace
+   * hover card, which the 1 state hides.
+   */
+  sessionHoverSide: number;
+  /**
+   * 会话概览悬停卡 — 最多可见行数 (1-60, default 10): the list grows up to
+   * this many prompt rows; beyond that it stays this tall and the excess
+   * rows live in the scrollable area (the list auto-lands on the newest).
+   */
+  sessionHoverMax: number;
+}
+
+/**
+ * Sidebar session-list paging (会话列表分页): ZCode hardcodes the project
+ * card's session rows to "first 5, +5 per 显示更多 click" (packages/ui
+ * ProjectTaskRows.tsx: `pageSize = chronological ? 20 : 5`, no collapse once
+ * expanded). This knob re-implements that paging at the DOM level with two
+ * user-set numbers plus a 收起 control.
+ */
+export interface ListPagingConfig {
+  /**
+   * Rows shown when a project card expands (初始展开条数), 1-100.
+   * 0 = feature off: nothing injected, the stock 5/+5 behaviour stays.
+   */
+  initial: number;
+  /** Rows added per 显示更多 click (每次加载条数), 1-100; only used when initial > 0. */
+  step: number;
+  /**
+   * 收起 button next to 显示更多 (1 = show, 0 = hide): snaps the visible rows
+   * back to `initial` without unmounting anything.
+   */
+  collapse: number;
+}
+
+const LIST_PAGING_MAX = 100;
+
+/** Clamp a partial paging config: 0 = off; counts to 1-100 ints. */
+export function normalizeListPaging(raw?: Partial<ListPagingConfig>): ListPagingConfig {
+  const num = (v: unknown, dflt: number): number =>
+    typeof v === "number" && Number.isFinite(v)
+      ? Math.max(1, Math.min(LIST_PAGING_MAX, Math.round(v)))
+      : dflt;
+  const initial = typeof raw?.initial === "number" && Number.isFinite(raw.initial) && raw.initial >= 1
+    ? Math.min(LIST_PAGING_MAX, Math.round(raw.initial))
+    : 0;
+  const collapse = raw?.collapse as unknown;
+  return {
+    initial,
+    step: initial > 0 ? num(raw?.step, 5) : 0,
+    collapse: initial > 0 && collapse !== 0 && collapse !== false ? 1 : 0,
+  };
 }
 
 /** Stock wide-tier constants, for reference/tests: 72rem cap, 24rem inset. */
@@ -145,6 +217,9 @@ export function normalizeChatLook(raw?: Partial<ChatLookConfig>): ChatLookConfig
     : 0;
   const dec = raw?.hideElapsedDecimal as unknown;
   const drag = raw?.dragResize as unknown;
+  const hover = raw?.sessionHover as unknown;
+  const hoverSide = raw?.sessionHoverSide as unknown;
+  const hoverMax = raw?.sessionHoverMax as unknown;
   return {
     chatDim: pct(raw?.chatDim),
     maskTop: pct(raw?.maskTop),
@@ -155,6 +230,16 @@ export function normalizeChatLook(raw?: Partial<ChatLookConfig>): ChatLookConfig
     perfSmooth: raw?.perfSmooth === 1 ? 1 : 0,
     hideElapsedDecimal: dec === 1 || dec === true ? 1 : 0,
     dragResize: drag === 1 || drag === true ? 1 : 0,
+    sessionHover: hover === 1 || hover === true ? 1 : 0,
+    // absent = 1: existing configs predate the side toggle and expect rows on
+    sessionHoverSide: hoverSide === 0 || hoverSide === false ? 0 : 1,
+    sessionHoverMax:
+      typeof hoverMax === "number" && Number.isFinite(hoverMax) && hoverMax >= 1
+        ? Math.min(60, Math.round(hoverMax))
+        : 10,
+    composerFade: typeof raw?.composerFade === "number" && Number.isFinite(raw.composerFade)
+      ? pct(raw.composerFade)
+      : 50,
   };
 }
 
@@ -256,9 +341,87 @@ export function normalizeTaskSpinnerLook(raw?: Partial<TaskSpinnerLookConfig>): 
 
 /** A pasted data URI larger than this is almost certainly a mistake at 16px. */
 export const SPINNER_REF_MAX_CHARS = 500_000;
+
+/**
+ * 会话底部加载图标 (chat-loading icon): ZCode 3.18 replaced the conversation
+ * footer's 3×3 pixel-wave dots with a brand-colored orbit SVG
+ * ([data-testid="chat-loading"] > [data-chat-loading-icon] > svg). "default"
+ * injects nothing; "classic" repaints the pre-3.18 wave (nine dots in a 13px
+ * grid, clockwise pulse, foreground color) over the new glyph; "image" paints
+ * a user picture (same slot contract as taskSpinnerLook).
+ */
+export type ChatLoadMode = "default" | "classic" | "image";
+
+export interface ChatLoadLookConfig {
+  mode: ChatLoadMode;
+  /** Image reference — same resolution rules as taskSpinnerLook.image. */
+  image: string;
+  /** Keep a CSS rotation on the replaced icon (static images want it on). */
+  spin: boolean;
+  /** Icon size in px (stock slot is 16; the classic grid is fixed 13). */
+  size: number;
+}
+
+export const DEFAULT_CHAT_LOAD_LOOK: ChatLoadLookConfig = {
+  mode: "default",
+  image: "",
+  spin: true,
+  size: 16,
+};
+
+/** Clamp a partial chat-load look over the defaults (mirrors the spinner). */
+export function normalizeChatLoadLook(raw?: Partial<ChatLoadLookConfig>): ChatLoadLookConfig {
+  const mode: ChatLoadMode = raw?.mode === "classic" || raw?.mode === "image" ? raw.mode : "default";
+  const size = typeof raw?.size === "number" && Number.isFinite(raw.size)
+    ? Math.max(10, Math.min(28, Math.round(raw.size)))
+    : DEFAULT_CHAT_LOAD_LOOK.size;
+  const ref = (v: unknown): string =>
+    typeof v === "string" ? v.trim().slice(0, SPINNER_REF_MAX_CHARS) : "";
+  return {
+    mode: mode === "image" && !ref(raw?.image) ? "default" : mode,
+    image: ref(raw?.image),
+    spin: raw?.spin !== false,
+    size,
+  };
+}
+
+/**
+ * FAB look (设置按钮): the floating panel-opener button (默认 🎨 圆球) can
+ * carry a custom image and size. Purely panel-side — the bootstrap never
+ * touches the FAB, so nothing here flows into BuiltPayload.
+ */
+export type FabMode = "default" | "image";
+export interface FabLookConfig {
+  mode: FabMode;
+  /** Image reference — same resolution rules as taskSpinnerLook.image. */
+  image: string;
+  /** Ball diameter in px (stock 34). */
+  size: number;
+}
+
+export const DEFAULT_FAB_LOOK: FabLookConfig = {
+  mode: "default",
+  image: "",
+  size: 34,
+};
+
+/** Clamp a partial fab look over the defaults (mirrors the chat-load icon). */
+export function normalizeFabLook(raw?: Partial<FabLookConfig>): FabLookConfig {
+  const mode: FabMode = raw?.mode === "image" ? "image" : "default";
+  const size = typeof raw?.size === "number" && Number.isFinite(raw.size)
+    ? Math.max(20, Math.min(64, Math.round(raw.size)))
+    : DEFAULT_FAB_LOOK.size;
+  const ref = (v: unknown): string =>
+    typeof v === "string" ? v.trim().slice(0, SPINNER_REF_MAX_CHARS) : "";
+  return {
+    mode: mode === "image" && !ref(raw?.image) ? "default" : mode,
+    image: ref(raw?.image),
+    size,
+  };
+}
+
 /** Inline fallback cap for local files outside the data dir. */
 export const SPINNER_FILE_MAX_BYTES = 2 * 1024 * 1024;
-
 const SPINNER_MIME: Record<string, string> = {
   ".gif": "image/gif",
   ".png": "image/png",
@@ -393,8 +556,16 @@ export interface BeautifyConfig {
   chatLook?: Partial<ChatLookConfig>;
   /** User message bubble look (聊天气泡); absent = stock ZCode bubble. */
   bubbleLook?: Partial<BubbleLookConfig>;
+  /** WorkBuddy-only component look (组件精修); absent = stock WorkBuddy. */
+  componentLook?: Partial<ComponentLookConfig>;
   /** Session-list running indicator look (运行中图标); absent = stock spinner. */
   taskSpinnerLook?: Partial<TaskSpinnerLookConfig>;
+  /** Conversation-footer loading icon (会话底部加载图标); absent = stock. */
+  chatLoadLook?: Partial<ChatLoadLookConfig>;
+  /** Panel-opener FAB look (设置按钮); absent = stock 🎨 ball. */
+  fabLook?: Partial<FabLookConfig>;
+  /** Sidebar session-list paging (会话列表分页); absent = stock 5/+5, no collapse. */
+  listPaging?: Partial<ListPagingConfig>;
   /** Hide wallpaper+panel during ZCode's startup screen (default true). */
   startupClean?: boolean;
   /** Beautify ZCode's update-status window too (default false — stays stock). */
@@ -445,16 +616,35 @@ export interface BuiltPayload {
   /** User message bubble look (聊天气泡), normalized; preset default = stock. */
   bubbleLook?: BubbleLookConfig;
   /**
+   * WorkBuddy component look (组件精修), normalized; `enabled: false` means
+   * nothing was injected. Always populated (ZCode gets the disabled default).
+   */
+  componentLook: ComponentLookConfig;
+  /**
    * Session-list running indicator look (运行中图标); `image` here is the
    * RESOLVED paint URL (media endpoint / data URI), "" = stock spinner.
    */
   taskSpinnerLook?: TaskSpinnerLookConfig;
+  /**
+   * Conversation-footer loading icon (会话底部加载图标); `image` is the
+   * RESOLVED paint URL (media endpoint / data URI), "" = stock glyph.
+   */
+  chatLoadLook?: ChatLoadLookConfig;
+  /** Sidebar session-list paging (会话列表分页); `initial: 0` = stock behaviour. */
+  listPaging?: ListPagingConfig;
   /** Defer mounting until the ZCode startup screen is gone (default true). */
   startupClean?: boolean;
   /** False when the target client has no chat-area extras wired yet. */
   chatUi?: boolean;
   /** How the bootstrap recognises the client's startup screen. */
   startupProbe?: "zcode-body-class" | "workbuddy-skeleton";
+  /**
+   * 会话概览悬停卡 data source: full URL of the serve endpoint INCLUDING the
+   * per-start token (`http://127.0.0.1:<port>/api/session-preview?t=…`).
+   * Empty when the feature is off / the target has no chat UI — the bootstrap
+   * then never mounts the hover card.
+   */
+  previewApi?: string;
 }
 
 /** The switching effect comes from the active rotation plan (fallback fade). */
@@ -583,6 +773,17 @@ ${rootSelector} { background: transparent !important; }
       parts.push(buildTransparencyOverrides({ dim: config.dim }));
     }
   }
+  // 组件精修 (WorkBuddy only): explicit overrides for the shell containers the
+  // design system cannot reach — the sidebar, menubar labels and composer are
+  // painted with literal colors — plus an optional bridge that makes the
+  // conversation renderer's --cr-* family follow --wb-*. Appended AFTER the
+  // token block so the component rules win the cascade.
+  const componentLook = app.tokens === "wb"
+    ? normalizeComponentLook(config.componentLook)
+    : normalizeComponentLook(undefined);
+  if (app.tokens === "wb" && componentLook.enabled) {
+    parts.push(workbuddyComponentCss(componentLook));
+  }
   // Library images stream over the serve media endpoint instead of a base64
   // data URI: a multi-MB payload means a huge CDP evaluate + a second decode
   // in the renderer, while the browser caches by URL — switching is far
@@ -618,6 +819,12 @@ ${rootSelector} { background: transparent !important; }
   if (spinnerLook.errorImage) {
     spinnerLook.errorImage = resolveSpinnerImageRef(spinnerLook.errorImage, config.apiPort ?? target().apiPort, mediaToken);
   }
+  // 会话底部加载图标: same resolution path as the spinner slots.
+  const chatLoadLook = normalizeChatLoadLook(config.chatLoadLook);
+  if (chatLoadLook.image) {
+    chatLoadLook.image = resolveSpinnerImageRef(chatLoadLook.image, config.apiPort ?? target().apiPort, mediaToken);
+    if (!chatLoadLook.image) chatLoadLook.mode = "default";
+  }
 
   return {
     css: parts.join("\n"),
@@ -634,10 +841,20 @@ ${rootSelector} { background: transparent !important; }
     // copied from ZCode can never inject rules for elements that do not exist.
     chatLook: chatUi ? normalizeChatLook(config.chatLook) : normalizeChatLook(undefined),
     bubbleLook: chatUi ? normalizeBubbleLook(config.bubbleLook) : normalizeBubbleLook(undefined),
+    componentLook,
     taskSpinnerLook: chatUi ? spinnerLook : normalizeTaskSpinnerLook(undefined),
+    chatLoadLook: chatUi ? chatLoadLook : normalizeChatLoadLook(undefined),
+    // 会话列表分页: ZCode-only (the virtual-project-tasks list does not exist
+    // elsewhere); the disabled default keeps WorkBuddy untouched.
+    listPaging: chatUi ? normalizeListPaging(config.listPaging) : normalizeListPaging(undefined),
     startupClean: config.startupClean !== false,
     chatUi,
     startupProbe: app.startupProbe,
+    // 会话概览悬停卡: only ZCode rows carry session ids, and only when the
+    // toggle is on does the bootstrap need the (token-bearing) endpoint.
+    previewApi: chatUi && normalizeChatLook(config.chatLook).sessionHover === 1
+      ? tok(`http://127.0.0.1:${config.apiPort ?? target().apiPort}/api/session-preview`)
+      : "",
   };
 }
 

@@ -56,8 +56,8 @@ const PNG_1PX = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUl
   };
   const payload = buildPayload(cfg, undefined, "tok");
   const s = payload.taskSpinnerLook!;
-  check("unread ref resolves to /media/spinner/", s.unreadImage === `http://127.0.0.1:9223/media/spinner/spinner-unread.png?t=tok`, String(s.unreadImage));
-  check("error ref resolves to /media/spinner/", s.errorImage === `http://127.0.0.1:9223/media/spinner/spinner-error.gif?t=tok`, String(s.errorImage));
+  check("unread ref resolves to /media/spinner/", s.unreadImage === `http://127.0.0.1:9224/media/spinner/spinner-unread.png?t=tok`, String(s.unreadImage));
+  check("error ref resolves to /media/spinner/", s.errorImage === `http://127.0.0.1:9224/media/spinner/spinner-error.gif?t=tok`, String(s.errorImage));
   check("terminal slots independent of mode default", s.mode === "default" && s.image === "");
 }
 
