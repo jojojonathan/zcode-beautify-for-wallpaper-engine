@@ -175,6 +175,20 @@ export interface ListPagingConfig {
    * back to `initial` without unmounting anything.
    */
   collapse: number;
+  /**
+   * 共 N 条 indicator after 显示更多 (1 = show, 0 = hide; default on). The
+   * exact total is only known once every row is mounted (React's hasMore gate
+   * hides it from the DOM), so enabling this render-aheads the list to its end
+   * — all rows mount (extras stay hidden), the native button retires, and the
+   * count reads the settled row count.
+   */
+  showTotal: number;
+  /**
+   * Whether 收起 snaps all the way back to `initial` in one click (1, default)
+   * or steps back by `step` rows per click (0), stopping at `initial`. Only
+   * meaningful while the 收起 button (collapse) is shown.
+   */
+  collapseAll: number;
 }
 
 const LIST_PAGING_MAX = 100;
@@ -189,10 +203,14 @@ export function normalizeListPaging(raw?: Partial<ListPagingConfig>): ListPaging
     ? Math.min(LIST_PAGING_MAX, Math.round(raw.initial))
     : 0;
   const collapse = raw?.collapse as unknown;
+  const showTotal = raw?.showTotal as unknown;
+  const collapseAll = raw?.collapseAll as unknown;
   return {
     initial,
     step: initial > 0 ? num(raw?.step, 5) : 0,
     collapse: initial > 0 && collapse !== 0 && collapse !== false ? 1 : 0,
+    showTotal: initial > 0 && showTotal !== 0 && showTotal !== false ? 1 : 0,
+    collapseAll: initial > 0 && collapseAll !== 0 && collapseAll !== false ? 1 : 0,
   };
 }
 
